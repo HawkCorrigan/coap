@@ -1,3 +1,5 @@
+# Anforderungen
+
 ## Pflicht: CoAP URI handling
 
 
@@ -34,3 +36,20 @@
 - content-format, accept
 - viele Options wie Size1 etc.
 - seperate responses (senden)
+
+
+# Konventionen
+
+###Build Automation Tool:
+GNU Make mit gcc
+
+###Code Conventions:
+Linux Kernel style mit 4 indent characters (nicht 8)
+
+###Commit Rules: Die sechs Gebote
+Commit messages aus Sicht des Programmieres (added a bug)
+Master is always stable (or not at all)
+Seperate Feature Branches
+Commit often, perfect later, publish once
+2+ branch (develop, master + feature)
+Ein Commit ändert eine Sache
