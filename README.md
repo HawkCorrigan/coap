@@ -47,9 +47,9 @@ GNU Make mit gcc
 Linux Kernel style mit 4 indent characters (nicht 8)
 
 ### Commit Rules: Die sechs Gebote
-Commit messages aus Sicht des Programmieres (added a bug)
-Master is always stable (or not at all)
-Seperate Feature Branches
-Commit often, perfect later, publish once
+Commit messages aus Sicht des Programmieres (added a bug) \n
+Master is always stable (or not at all) \n
+Seperate Feature Branches \n
+Commit often, perfect later, publish once \n
 2+ branch (develop, master + feature)
 Ein Commit ändert eine Sache
