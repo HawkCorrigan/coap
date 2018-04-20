@@ -61,14 +61,14 @@ Linux Kernel style mit 4 indent characters (nicht 8)
 - UDP Sender
 - Message Format
 
-## Malik Mann
+### Malik Mann
 
 Message Format
 
-## Lasse van der Woude
+### Lasse van der Woude
 
 UDP Listener
 
-## David Grölle
+### David Grölle
 
 UDP Sender
