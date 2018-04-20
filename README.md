@@ -40,13 +40,13 @@
 
 # Konventionen
 
-###Build Automation Tool:
+### Build Automation Tool:
 GNU Make mit gcc
 
-###Code Conventions:
+### Code Conventions:
 Linux Kernel style mit 4 indent characters (nicht 8)
 
-###Commit Rules: Die sechs Gebote
+### Commit Rules: Die sechs Gebote
 Commit messages aus Sicht des Programmieres (added a bug)
 Master is always stable (or not at all)
 Seperate Feature Branches
