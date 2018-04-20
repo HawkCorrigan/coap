@@ -53,3 +53,22 @@ Linux Kernel style mit 4 indent characters (nicht 8)
 - Commit often, perfect later, publish once
 - 2+ branch (develop, master + feature)
 - Ein Commit ändert eine Sache
+
+
+# Weekly Tasks
+
+- UDP Listener
+- UDP Sender
+- Message Format
+
+## Malik Mann
+
+Message Format
+
+## Lasse van der Woude
+
+UDP Listener
+
+## David Grölle
+
+UDP Sender
