@@ -7,6 +7,8 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
+#include "coap_message.h"
+
 #define BUF_SIZE 512
 
 /*
