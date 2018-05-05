@@ -2,20 +2,12 @@
 #include <malloc.h>
 
 typedef struct {
-    coap_header_t header;
-    uint64_t token;
-    uint8_t numopts;
-    coap_option_t* opts;
-    uint8_t *payload;
-} coap_message_t;
-
-typedef struct {
     uint8_t vers;
     uint8_t type;
     uint8_t token_len;
     uint8_t code_type;
     uint8_t code_status;
-    uint8_t message_id;
+    uint16_t message_id;
 } coap_header_t;
 
 typedef struct {
@@ -28,11 +20,15 @@ typedef struct {
     coap_buffer_t value;
 } coap_option_t;
 
-int main() {
-    return 0;
-}
+typedef struct {
+    coap_header_t *header;
+    uint64_t token;
+    uint8_t numopts;
+    coap_option_t* opts;
+    uint8_t *payload;
+} coap_message_t;
 
-coap_header_t parseHeader(uint8_t *bitstring) {
+coap_header_t* parseHeader(uint8_t *bitstring) {
     coap_header_t *header = malloc(sizeof(coap_header_t));
 
     if ((bitstring[0] & 0b11000000) != 0b01000000) {
@@ -53,7 +49,7 @@ coap_header_t parseHeader(uint8_t *bitstring) {
     
     header->message_id = (unsigned) ((bitstring[2] << 8) | bitstring[3]);
 
-    return *header;
+    return header;
 }
 
 coap_message_t parse(uint8_t *bitstring, int udp_message_len) {
@@ -79,8 +75,8 @@ coap_message_t parse(uint8_t *bitstring, int udp_message_len) {
 
         uint8_t cbyte = bitstring[readpos];
 
-        message->opts[optCount-1]->delta = (cbyte & 0b11110000) >> 4;
-        uint8_t delta = message->opts[optCount-1]->delta == 13;
+        message->opts[optCount-1].delta = (cbyte & 0b11110000) >> 4;
+        uint8_t delta = message->opts[optCount-1].delta == 13;
         uint8_t o_len = (cbyte & 0b00001111);
 
         if (delta == 15 || o_len == 15) {
@@ -88,27 +84,27 @@ coap_message_t parse(uint8_t *bitstring, int udp_message_len) {
         }
 
         if (delta == 13 || delta == 14) {
-            message->opts[optCount-1]->delta = bitstring[++readpos];
+            message->opts[optCount-1].delta = bitstring[++readpos];
         }
 
         if (delta == 14) {
-            message->opts[optCount-1]->delta =
-                (message->opts[optCount-1]->delta << 8) | bitstring[++readpos];
+            message->opts[optCount-1].delta =
+                (message->opts[optCount-1].delta << 8) | bitstring[++readpos];
         }
 
         if (o_len == 13 || o_len == 14) {
-            message->opts[optCount-1]->value->len = bitstring[++readpos];
+            message->opts[optCount-1].value.len = bitstring[++readpos];
         }
 
         if (o_len == 14) {
-            message->opts[optCount-1]->value->len =
-                (message->opts[optCount-1]->value->len << 8) | bitstring[++readpos];
+            message->opts[optCount-1].value.len =
+                (message->opts[optCount-1].value.len << 8) | bitstring[++readpos];
         }
 
-        message->opts->value->p =
-            malloc(message->opts[optCount-1]->value->len * sizeof(uint8_t));        
-        for (int i = 0; i < message->opts[optCount-1]->value->len; i++) {
-            message->opts->value->p[i] = bitstring[++readpos];
+        message->opts[optCount-1].value.p =
+            malloc(message->opts[optCount-1].value.len * sizeof(uint8_t));
+        for (int i = 0; i < message->opts[optCount-1].value.len; i++) {
+            message->opts[optCount-1].value.p[i] = bitstring[++readpos];
         }
 
         readpos++;
@@ -122,11 +118,11 @@ coap_message_t parse(uint8_t *bitstring, int udp_message_len) {
     }
 
     readpos++;
-    int payload_byte_count = 0;
-    message->payload = malloc(sizeof(uint8_t));
-    for (readpos; readpos < udp_message_len; readpos++) {
-        payload_byte_count++;
-        message->payload = realloc(message->payload, (size_t) payload_byte_count);
-        message->payload[payload_byte_count - 1] = bitstring[readpos];
-    }
+    /*int payload_byte_count = udp_message_len - readpos + 1;
+
+
+    message->payload = malloc(payload_byte_count * sizeof(uint8_t));
+
+    memcpy(message->payload, bitstring + (readpos*8), (size_t) payload_byte_count);
+     */
 }

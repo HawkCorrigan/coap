@@ -15,10 +15,17 @@
  * memread is placeholder until application context is given, to read buf received
  */
  
-void memread(char* buf){
+void memread(char* buf, int count){
 	
-	printf("%s\n", buf);
-	return;
+	coap_message_t message = parse((uint8_t*) buf, count);
+	printf("%d\n", message.header->vers);
+	printf("%d\n", message.header->type);
+	printf("%d\n", message.header->token_len);
+	printf("%d.%d\n", message.header->code_type, message.header->code_status);
+	printf("%d\n", message.header->message_id);
+
+	printf("\n");
+	printf("%s\n", message.payload);
 }
 
 int main(void)
@@ -28,7 +35,7 @@ int main(void)
 	 */
 	 
 	char* host = NULL;
-	char* port = "54915";
+	char* port = "5683";
 	
 	struct addrinfo hints;
 	memset(&hints,0,sizeof(hints));
@@ -93,7 +100,7 @@ int main(void)
 		}
 		else {
 			printf("received %zu bytes of data \n", count);
-			memread(buf);
+			memread(buf, count);
 		}
 		
 	}
