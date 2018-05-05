@@ -25,7 +25,7 @@ typedef struct {
     uint64_t token;
     uint8_t numopts;
     coap_option_t* opts;
-    uint8_t *payload;
+    coap_buffer_t payload;
 } coap_message_t;
 
 coap_header_t* parseHeader(uint8_t *bitstring) {
@@ -71,7 +71,7 @@ coap_message_t parse(uint8_t *bitstring, int udp_message_len) {
     int optCount = 0;
     while (bitstring[readpos] != 0xFF && readpos < udp_message_len) {
         optCount++;
-        message->opts = realloc(message->opts, (size_t) optCount);
+        message->opts = realloc(message->opts, (size_t) optCount * sizeof(coap_option_t));
 
         uint8_t cbyte = bitstring[readpos];
 
@@ -118,11 +118,14 @@ coap_message_t parse(uint8_t *bitstring, int udp_message_len) {
     }
 
     readpos++;
-    /*int payload_byte_count = udp_message_len - readpos + 1;
+    int payload_byte_count = udp_message_len - readpos + 1;
 
 
-    message->payload = malloc(payload_byte_count * sizeof(uint8_t));
+    message->payload.len = (size_t) udp_message_len -readpos + 1;
 
-    memcpy(message->payload, bitstring + (readpos*8), (size_t) payload_byte_count);
-     */
+    message->payload.p = malloc(payload_byte_count * sizeof(uint8_t));
+
+    memcpy(message->payload.p, bitstring + (readpos*8), (size_t) payload_byte_count);
+    
+    return *message;
 }
