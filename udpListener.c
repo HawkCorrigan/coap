@@ -18,14 +18,14 @@
 void memread(char* buf, int count){
 	
 	coap_message_t message = parse((uint8_t*) buf, count);
-	printf("%d\n", message.header->vers);
-	printf("%d\n", message.header->type);
-	printf("%d\n", message.header->token_len);
-	printf("%d.%d\n", message.header->code_type, message.header->code_status);
-	printf("%d\n", message.header->message_id);
+	printf("proto vers: %d\n", message.header->vers);
+	printf("mess type: %d\n", message.header->type);
+	printf("tkn len: %d\n", message.header->token_len);
+	printf("msg code: %d.%d\n", message.header->code_type, message.header->code_status);
+	printf("msg id: %d\n", message.header->message_id);
 
 	printf("\n");
-	printf("%s\n", message.payload);
+	printf("payload: %s\n", message.payload);
 }
 
 int main(void)
