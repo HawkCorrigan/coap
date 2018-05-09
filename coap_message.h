@@ -110,8 +110,10 @@ coap_message_t parse(uint8_t *bitstring, int udp_message_len) {
         readpos++;
     }
 
-    if (readpos == udp_message_len)
+    if (readpos == udp_message_len) {
+        message->payload.len = 0;
         return *message;
+    }
 
     if (bitstring[readpos - 1] == 0xFF) {
         //TODO Message format error
@@ -125,14 +127,6 @@ coap_message_t parse(uint8_t *bitstring, int udp_message_len) {
     message->payload.p = malloc((payload_byte_count + 1) * sizeof(uint8_t));
 
     memcpy(message->payload.p, bitstring + readpos, (size_t) payload_byte_count);
-
-    int i;
-    for (i = 0; i < payload_byte_count; i++) {
-        printf("%x\n", bitstring[readpos + i]);
-    }
-    printf("\n");
-
-//    printf('\n');//*/
 
     message->payload.p[payload_byte_count] = '\0';
 

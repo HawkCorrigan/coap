@@ -1,6 +1,6 @@
 #include <stdio.h>
+#include "udpListener.h"
 
 int main() {
-    printf("Hello, World!\n");
-    return 0;
+    startListener();
 }

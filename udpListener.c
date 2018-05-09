@@ -24,11 +24,16 @@ void memread(char* buf, int count){
 	printf("msg code: %d.%d\n", message.header->code_type, message.header->code_status);
 	printf("msg id: %d\n", message.header->message_id);
 
+	if (message.payload.len != 0) {
+		printf("payload: %s\n", message.payload);
+	} else {
+		printf("no payload available\n");
+	}
+
 	printf("\n");
-	printf("payload: %s\n", message.payload);
 }
 
-int main(void)
+void startListener()
 {
 	/*
 	 * one of host or port can be NULL, if unknown
@@ -88,21 +93,19 @@ int main(void)
 	 */
 	 
 	for(;;) {
-		
+
 		char buf[BUF_SIZE];
 		struct sockaddr_storage peer_addr;
 		socklen_t peer_addr_len = sizeof(peer_addr);
-		
-		ssize_t count = recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr*)&peer_addr, &peer_addr_len);	
-		
+
+		ssize_t count = recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &peer_addr, &peer_addr_len);
+
 		if (count == -1) {
 			continue;
-		}
-		else {
+		} else {
 			printf("received %zu bytes of data \n", count);
 			memread(buf, count);
 		}
-		
+
 	}
-		
 }
