@@ -1,3 +1,0 @@
-/home/malik/Dokumente/Uni/CoAP/CMakeFiles/rebuild_cache.dir
-/home/malik/Dokumente/Uni/CoAP/CMakeFiles/edit_cache.dir
-/home/malik/Dokumente/Uni/CoAP/CMakeFiles/CoAPb.dir
