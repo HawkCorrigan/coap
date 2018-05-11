@@ -16,7 +16,7 @@ typedef struct {
 } coap_buffer_t;
 
 typedef struct {
-    uint16_t delta;
+    uint16_t number;
     coap_buffer_t value;
 } coap_option_t;
 
@@ -69,45 +69,40 @@ coap_message_t parse(uint8_t *bitstring, int udp_message_len) {
     message->opts = malloc(sizeof(coap_option_t));
 
     int optCount = 0;
+    uint16_t rollingDelta=0;
     while (bitstring[readpos] != 0xFF && readpos < udp_message_len) {
         optCount++;
         message->opts = realloc(message->opts, (size_t) (optCount * sizeof(coap_option_t)));
 
         uint8_t cbyte = bitstring[readpos];
 
-        message->opts[optCount - 1].delta = (cbyte & 0b11110000) >> 4;
-        uint8_t delta = message->opts[optCount - 1].delta;
-        message->opts[optCount - 1].value.len=(size_t)(cbyte & 0b00001111);
-        uint8_t o_len = message->opts[optCount-1].value.len;
+        uint8_t delta = (cbyte & 0xF0) >> 4;
+        uint8_t o_len = (cbyte & 0x0F);
 
         if (delta == 15 || o_len == 15) {
             exit(1);
         }
-        if (delta == 13 || delta == 14) {
-            message->opts[optCount - 1].delta = bitstring[++readpos];
+        if (delta == 13) {
+            delta=bitstring[++readpos]+13;
         }
 
         if (delta == 14) {
-            message->opts[optCount - 1].delta =
-                    (message->opts[optCount - 1].delta << 8) | bitstring[++readpos];
+            delta = (bitstring[++readpos] << 8) | bitstring[++readpos]+269;
         }
 
-        if (o_len == 13 || o_len == 14) {
-            message->opts[optCount - 1].value.len = bitstring[++readpos];
+        if (o_len == 13) {
+            o_len = bitstring[++readpos]+13;
         }
 
         if (o_len == 14) {
-            message->opts[optCount - 1].value.len =
-                    (message->opts[optCount - 1].value.len << 8) | bitstring[++readpos];
+            o_len = (bitstring[++readpos] << 8) | bitstring[++readpos]+269;
         }
 
-        message->opts[optCount - 1].value.p =
-                malloc(message->opts[optCount - 1].value.len * sizeof(uint8_t));
-        for (int i = 0; i < message->opts[optCount - 1].value.len; i++) {
-            message->opts[optCount - 1].value.p[i] = bitstring[++readpos];
-        }
-
-        readpos++;
+        message->opts[optCount-1].number=delta+rollingDelta;
+        message->opts[optCount-1].value.len=o_len;
+        message->opts[optCount - 1].value.p = &(bitstring[++readpos]);
+        
+        readpos+=o_len;
     }
 
     message->numopts=optCount;
