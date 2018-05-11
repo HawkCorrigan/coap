@@ -17,21 +17,23 @@
  
 void memread(char* buf, int count){
 	
-	coap_message_t message = parse((uint8_t*) buf, count);
-	printf("proto vers: %d\n", message.header->vers);
-	printf("mess type: %d\n", message.header->type);
-	printf("tkn len: %d\n", message.header->token_len);
-	printf("msg code: %d.%d\n", message.header->code_type, message.header->code_status);
+
+    coap_message_t *message = malloc(sizeof(coap_message_t));
+	int success = parse(message, (uint8_t*) buf, count);
+	printf("proto vers: %d\n", message->header->vers);
+	printf("mess type: %d\n", message->header->type);
+	printf("tkn len: %d\n", message->header->token_len);
+	printf("msg code: %d.%d\n", message->header->code_type, message->header->code_status);
 	int i;
-	for(i=0;i<message.numopts;i++){
-		printf("option: %d.%02x\n", message.opts[i].number,*message.opts[i].value.p);
+	for(i=0;i<message->numopts;i++){
+		printf("option: %d.%02x\n", message->opts[i].number,*message->opts[i].value.p);
 	}
-	printf("msg id: %d\n", message.header->message_id);
+	printf("msg id: %d\n", message->header->message_id);
 
 
 
-	if (message.payload.len != 0) {
-		printf("payload: %s\n", message.payload);
+	if (message->payload.len != 0) {
+		printf("payload: %s\n", message->payload);
 	} else {
 		printf("no payload available\n");
 	}
