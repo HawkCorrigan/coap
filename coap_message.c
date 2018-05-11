@@ -124,8 +124,26 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
     uint8_t runningDelta=0;
     for(int  i = 0; i < msg->numopts; i++)
     {
-        uint32_t peek_delta;
         int optDelta = msg->opts[i].number - runningDelta;
+        if (optDelta < 13){
+            delta= 0xFF & optDelta;
+        }
+        else if (optDelta <= 13+0xFF){
+            delta= 13;
+        }
+        else if (optDelta <= 269+0xFFFF){
+            delta = 14
+        }
+        int optLength = msg->opts[i].value.len;
+        if (optLength < 13){
+            length= 0xFF & optLength;
+        }
+        else if (optLength <= 13+0xFF){
+            length= 13;
+        }
+        else if (optLength <= 269+0xFFFF){
+            length = 14
+        }
         *p++ = delta<<4 | len;
         if(delta==13){
             *p++=optDelta-13;
