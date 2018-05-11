@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "udpListener.h"
+#include "udpSender.h"
 
 int main() {
-    startListener();
+    startSender();
 }

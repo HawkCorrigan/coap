@@ -125,6 +125,7 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
     for(int  i = 0; i < msg->numopts; i++)
     {
         int optDelta = msg->opts[i].number - runningDelta;
+        uint8_t length, delta;
         if (optDelta < 13){
             delta= 0xFF & optDelta;
         }
@@ -132,7 +133,7 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
             delta= 13;
         }
         else if (optDelta <= 269+0xFFFF){
-            delta = 14
+            delta = 14;
         }
         int optLength = msg->opts[i].value.len;
         if (optLength < 13){
@@ -142,9 +143,9 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
             length= 13;
         }
         else if (optLength <= 269+0xFFFF){
-            length = 14
+            length = 14;
         }
-        *p++ = delta<<4 | len;
+        *p++ = delta<<4 | length;
         if(delta==13){
             *p++=optDelta-13;
         }
@@ -153,10 +154,10 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
             *p++=(0xFF & (optDelta-269));
         }
 
-        if(len==13){
+        if(length==13){
             *p++ = msg->opts[i].value.len -13;
         }
-        if(len==14){
+        if(length==14){
             *p++ = (msg->opts[i].value.len-269)>>8;
             *p++ = (0xFF & (msg->opts[i].value.len-269));
         }
