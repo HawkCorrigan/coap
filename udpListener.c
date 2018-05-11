@@ -22,7 +22,13 @@ void memread(char* buf, int count){
 	printf("mess type: %d\n", message.header->type);
 	printf("tkn len: %d\n", message.header->token_len);
 	printf("msg code: %d.%d\n", message.header->code_type, message.header->code_status);
+	int i;
+	for(i=0;i<message.numopts;i++){
+		printf("option: %d.%02x", message.opts[i].delta,message.opts[i].value);
+	}
 	printf("msg id: %d\n", message.header->message_id);
+
+
 
 	if (message.payload.len != 0) {
 		printf("payload: %s\n", message.payload);

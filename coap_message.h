@@ -71,18 +71,18 @@ coap_message_t parse(uint8_t *bitstring, int udp_message_len) {
     int optCount = 0;
     while (bitstring[readpos] != 0xFF && readpos < udp_message_len) {
         optCount++;
-        message->opts = realloc(message->opts, (size_t) optCount * sizeof(coap_option_t));
+        message->opts = realloc(message->opts, (size_t) (optCount * sizeof(coap_option_t)));
 
         uint8_t cbyte = bitstring[readpos];
 
         message->opts[optCount - 1].delta = (cbyte & 0b11110000) >> 4;
-        uint8_t delta = message->opts[optCount - 1].delta == 13;
-        uint8_t o_len = (cbyte & 0b00001111);
+        uint8_t delta = message->opts[optCount - 1].delta;
+        message->opts[optCount - 1].value.len=(size_t)(cbyte & 0b00001111);
+        uint8_t o_len = message->opts[optCount-1].value.len;
 
         if (delta == 15 || o_len == 15) {
-            //TODO Message format error
+            exit(1);
         }
-
         if (delta == 13 || delta == 14) {
             message->opts[optCount - 1].delta = bitstring[++readpos];
         }
@@ -109,6 +109,8 @@ coap_message_t parse(uint8_t *bitstring, int udp_message_len) {
 
         readpos++;
     }
+
+    message->numopts=optCount;
 
     if (readpos == udp_message_len) {
         message->payload.len = 0;
