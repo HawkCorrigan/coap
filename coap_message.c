@@ -29,14 +29,18 @@ int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len) {
     int readpos = 0;
     message->header=malloc(sizeof(coap_header_t));
     int success = parseHeader(message->header, bitstring);
-
-    message->token = 0;
     readpos = 4;
+    
 
-    for (int i = 0; i < message->header->token_len; i++) {
-        message->token = ((message->token) << 8) | bitstring[4 + i];
-        readpos++;
+    if(message->header->token_len==0){
+    message->token.len = 0;
+    message->token.p = NULL;
     }
+    if(message->header->token_len<8){
+        message->token.p=bitstring+4;
+        message->token.len=message->header->token_len;
+    }
+    readpos+=message->header->token_len;
 
     message->opts = malloc(sizeof(coap_option_t));
 

@@ -22,7 +22,7 @@ typedef struct {
 
 typedef struct {
     coap_header_t *header;
-    uint64_t token;
+    coap_buffer_t token;
     uint8_t numopts;
     coap_option_t *opts;
     coap_buffer_t payload;
