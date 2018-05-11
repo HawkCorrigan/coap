@@ -126,6 +126,7 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
     {
         uint32_t peek_delta;
         int optDelta = msg->opts[i].number - runningDelta;
+        *p++ = delta<<4 | len;
         if(delta==13){
             *p++=optDelta-13;
         }
