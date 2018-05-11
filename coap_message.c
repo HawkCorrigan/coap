@@ -105,3 +105,51 @@ int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len) {
 
     return 0;
 }
+
+
+int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
+    buf[0] = (msg->header->vers & 0x03) << 6;
+    buf[0] |= (msg->header->type & 0x03 ) << 4;
+    buf[0] |= (msg->header->token_len&0x0F);
+    buf[1] = msg->header->code_type;
+    buf[2] = msg->header->message_id >> 8;
+    buf[3] = msg->header->message_id;
+
+    uint8_t *p =buf+4;
+    if (msg->header->token_len > 0){
+        memcpy(p, msg->token.p, msg->header->token_len);
+    }
+    p+=msg->header->token_len;
+
+    uint8_t runningDelta=0;
+    for(int  i = 0; i < msg->numopts; i++)
+    {
+        uint32_t peek_delta;
+        int optDelta = msg->opts[i].number - runningDelta;
+        if(delta==13){
+            *p++=optDelta-13;
+        }
+        if(delta==14){
+            *p++=(optDelta-269)>>8;
+            *p++=(0xFF & (optDelta-269));
+        }
+
+        if(len==13){
+            *p++ = msg->opts[i].value.len -13;
+        }
+        if(len==14){
+            *p++ = (msg->opts[i].value.len-269)>>8;
+            *p++ = (0xFF & (msg->opts[i].value.len-269));
+        }
+
+        memcpy(p, msg->opts[i].value.p, msg->opts[i].value.len);
+        p+=msg->opts[i].value.len;
+        runningDelta = msg->opts[i].number;
+    }
+
+    if (msg->payload.len > 0){
+        *p++=0xFF;
+        memcpy(p, msg->payload.p, msg->payload.len);
+    }
+    return 0;
+}
