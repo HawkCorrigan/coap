@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include "udpListener.h"
 #include "udpSender.h"
 #include "coap_message.h"
@@ -8,22 +10,27 @@
 */
 coap_message_t *message;
 
+char* createmsg(size_t size);
+coap_message_t* memread(char* buf);
+
 int main() 
 {
+	char* msgbuf;
+
 	/*
 	* save the recieved UDP data into msgbuf
 	*/
 
-    char* msgbuf = startListener();
+    msgbuf = startListener();
     if(msgbuf == NULL) {
         printf("udpListener failed to bind");
-        return;
+        return -1;
     }
 
 	coap_message_t *message = malloc(sizeof(coap_message_t));
     if(message == NULL) {
         printf("Memory allocation failed");
-        return;
+        return -1;
     }
 
 	/*
@@ -38,8 +45,8 @@ int main()
 	* turn message back into bitstring to send via UDP
 	*/
 
-	char* msgbuf = createmsg(size);
-	startSender(msgbuf);
+	msgbuf = createmsg(size);
+	startSender(msgbuf, size);
 
 	free(message);
 }
@@ -47,7 +54,7 @@ int main()
 coap_message_t* memread(char* buf)
 {
 	int msglen = sizeof(buf);
-	int success = parse(message, (uint8_t*) buf, msglen);
+	parse(message, (uint8_t*) buf, msglen);
 	printf("proto vers: %d\n", message->header->vers);
 	printf("mess type: %d\n", message->header->type);
 	printf("tkn len: %d\n", message->header->token_len);
