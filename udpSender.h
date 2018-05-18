@@ -1,1 +1,1 @@
-void startSender();
+void startSender(char* buf, size_t size);
