@@ -10,8 +10,8 @@
 */
 coap_message_t *message;
 
-char* createmsg(size_t size);
-coap_message_t* memread(char* buf);
+void createmsg(char* content, size_t size);
+void memread(char* buf);
 
 int main() 
 {
@@ -44,13 +44,13 @@ int main()
 	* turn message back into bitstring to send via UDP
 	*/
 
-	msgbuf = createmsg(size);
+	createmsg(msgbuf, size);
 	startSender(msgbuf, size);
 
 	free(message);
 }
 
-coap_message_t* memread(char* buf)
+void memread(char* buf)
 {
 	int msglen = sizeof(buf);
 	parse(message, (uint8_t*) buf, msglen);
@@ -73,11 +73,9 @@ coap_message_t* memread(char* buf)
 	}
 
 	printf("\n");
-
-	return message;
 }
 
-char* createmsg(size_t size)
+void createmsg(char* content, size_t size)
 {
     message->header=malloc(sizeof(coap_header_t));
     message->header->vers=1;
@@ -91,8 +89,5 @@ char* createmsg(size_t size)
     message->payload.len=0;
     message->payload.p=NULL;
 
-	char* content;
     build(content,size,message);
-
-	return content;
 }
