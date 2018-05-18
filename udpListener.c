@@ -9,7 +9,7 @@
 
 #define BUF_SIZE 512
 
-char* startListener()
+int startListener(char* buf)
 {
 	/*
 	 * one of host or port can be NULL, if unknown
@@ -34,7 +34,7 @@ char* startListener()
 	fd = getaddrinfo(host, port, &hints, &result);
 	if(fd != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(fd));
-		return NULL;
+		return -1;
 	}
 	
 	/*
@@ -52,7 +52,7 @@ char* startListener()
 		
 		if (bind(sockfd, tmp->ai_addr, tmp->ai_addrlen) != 0) {
 			fprintf(stderr, "Error with Bind: %s \n",strerror(errno));
-			return NULL;
+			return -1;
 		}
 		else {
 			printf("Binding with %i \n", sockfd);
@@ -80,7 +80,7 @@ char* startListener()
 			continue;
 		} else {
 			printf("received %zu bytes of data \n", count);
-			return buf;
+			return 0;
 		}
 
 	}
