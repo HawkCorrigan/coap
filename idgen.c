@@ -36,7 +36,7 @@ uint8_t tidxorshift()
 
 }
 
-uint8_t midxorshift()
+uint16_t midxorshift()
 {
     if(seed == 0){
         initialise();
