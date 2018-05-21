@@ -4,15 +4,39 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build ",
+            "label": "build server",
             "type": "shell",
-            "command": "g++",
+            "command": "gcc",
             "args": [
+                "-Wall",
                 "-g",
+                "serverMain.c",
                 "udpListener.c",
                 "coapMessage.c",
                 "-o",
-                "main"
+                "coap-server"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "build client",
+            "type": "shell",
+            "command": "gcc",
+            "args": [
+                "-Wall",
+                "-g",
+                "clientMain.c",
+                "udpSender.c",
+                "coapMessage.c",
+                "-o",
+                "coap-client"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
             ]
         }
     ]
