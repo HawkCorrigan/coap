@@ -107,7 +107,7 @@ int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len) {
 }
 
 
-int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
+int build(uint8_t *buf, size_t buflen, const coap_message_t *msg){
     buf[0] = (msg->header->vers & 0x03) << 6;
     buf[0] |= (msg->header->type & 0x03 ) << 4;
     buf[0] |= (msg->header->token_len&0x0F);

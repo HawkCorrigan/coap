@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <malloc.h>
 
 typedef struct {
@@ -30,3 +31,4 @@ typedef struct {
 
 int parseHeader(coap_header_t *header, uint8_t *bitstring);
 int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len);
+int build(uint8_t *buf, size_t buflen, const coap_message_t *msg);
