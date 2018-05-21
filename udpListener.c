@@ -1,5 +1,6 @@
 #include <sys/types.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -7,7 +8,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
-#include "coap_message.h"
+#include "coapMessage.h"
 
 #define BUF_SIZE 512
 

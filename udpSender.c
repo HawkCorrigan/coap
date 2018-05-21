@@ -7,10 +7,12 @@
 #include <netinet/in.h>
 #include <sys/uio.h>
 
+#include "coapMessage.h"
+
 
 void startSender(){
     const char* host=0; /* localhost */
-    const char* port="daytime";
+    const char* port="5683";
     struct addrinfo hints;
     memset(&hints,0,sizeof(hints));
     hints.ai_family=AF_UNSPEC;

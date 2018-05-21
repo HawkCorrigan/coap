@@ -1,7 +1,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
-#include "coap_message.h"
+
+#include "coapMessage.h"
 
 int parseHeader(coap_header_t *header, uint8_t *bitstring) { //1=Ignore, 0=Success, -1=Error
 
