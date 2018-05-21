@@ -9,7 +9,7 @@
 
 #define BUF_SIZE 512
 
-int startListener(char* buf)
+int startListener(char* buf, size_t *msg_size)
 {
 	/*
 	 * one of host or port can be NULL, if unknown
@@ -70,7 +70,6 @@ int startListener(char* buf)
 	 
 	for(;;) {
 
-		char buf[BUF_SIZE];
 		struct sockaddr_storage peer_addr;
 		socklen_t peer_addr_len = sizeof(peer_addr);
 
@@ -80,8 +79,10 @@ int startListener(char* buf)
 			continue;
 		} else {
 			printf("received %zu bytes of data \n", count);
+			*msg_size=count;
 			return 0;
 		}
 
 	}
+
 }

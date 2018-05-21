@@ -25,7 +25,7 @@ int parseHeader(coap_header_t *header, uint8_t *bitstring) { //1=Ignore, 0=Succe
     return 0;
 }
 
-int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len) {
+int parse(coap_message_t *message, uint8_t *bitstring, size_t udp_message_len) {
     int readpos = 0;
     message->header=malloc(sizeof(coap_header_t));
     int success = parseHeader(message->header, bitstring);
@@ -106,6 +106,29 @@ int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len) {
     return 0;
 }
 
+int dumpMessage(coap_message_t *msg){
+    printf("proto vers: %d\n", msg->header->vers);
+	printf("mess type: %d\n", msg->header->type);
+	printf("tkn len: %d\n", msg->header->token_len);
+	printf("msg code: %d.%d\n", msg->header->code_type, msg->header->code_status);
+	int i;
+	for(i=0;i<msg->numopts;i++){
+		printf("option: %d.%02x\n", msg->opts[i].number,*msg->opts[i].value.p);
+	}
+	printf("msg id: %d\n", msg->header->message_id);
+
+
+	if (msg->payload.len != 0) {
+		printf("payload: %s\n", msg->payload);
+	} 
+	else {
+		printf("no payload available\n");
+	}
+
+	printf("\n");
+
+    return 0;
+}
 
 int build(uint8_t *buf, size_t buflen, const coap_message_t *msg){
     buf[0] = (msg->header->vers & 0x03) << 6;
