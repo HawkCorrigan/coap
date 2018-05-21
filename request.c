@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "request.h"
+#include "idgen.h"
 
 /*
 *  IDEA: save currently pending requests. When a new request is made to the server,
@@ -9,10 +10,10 @@
    the identifier of the resource, a payload and Internet media type (if
    any), and optional metadata about the request.
 *
-*       handlereq is one part of request-response matching, the others being handleres and callmatch
+*  addreq is the SERVER-SIDE function to distill all relevant data from an incoming request
 */
 
-int createreq(coap_message_t* msg, coap_request_t* req)
+int handlereq(coap_message_t* msg, coap_request_t* req)
 {
 /* 
 *   check cody type to be 0.xx
@@ -26,14 +27,14 @@ int createreq(coap_message_t* msg, coap_request_t* req)
 */
     req->endpoint->method = msg->header->code_status;
     for(int i = 0; i < msg->numopts; i++){
-        if(msg->opts->number == 7){
-            req->endpoint->path->number = msg->opts->value.p; // david pls help me here and make it work
+        if(msg->opts[i].number == 7){
+            req->endpoint->path->number = msg->opts[i].value.p; // david pls help me here and make it work
         }
     }
 
     for(int i = 0; i < msg->numopts; i++){
-        if(msg->opts->number == 11){
-            req->endpoint->path->dest = msg->opts->value.p; // why? p is a pointer, dest is a pointer!?
+        if(msg->opts[i].number == 11){
+            req->endpoint->path->dest = msg->opts[i].value.p; // this one too pls :(
         }
     }
 /* 
@@ -44,8 +45,8 @@ int createreq(coap_message_t* msg, coap_request_t* req)
 *   set accept option
 */
     for(int i = 0; i < msg->numopts; i++){
-        if(msg->opts->number == 17){
-            req->mediatype = msg->opts->value.p;
+        if(msg->opts[i].number == 17){
+            req->mediatype = msg->opts[i].value.p;
         }
     }
 
@@ -58,6 +59,30 @@ int createreq(coap_message_t* msg, coap_request_t* req)
 *   set token
 */
     req->token = msg->token.p;
+
+    return 0;
+}
+
+/* 
+*    makereq generates token and adds it to the outgoing message, accept option should already be set.
+*/
+int makereq(coap_message_t* outmsg, coap_clientrequest_t* req)
+{
+/* 
+*   generate and set token
+*/
+    uint8_t token = tidxorshift();
+    req->token = token;
+    outmsg->token.p = token;
+
+/* 
+*   set accept option
+*/
+    for(int i = 0; i < outmsg->numopts; i++){
+        if(outmsg->opts[i].number == 17){
+            req->mediatype = outmsg->opts[i].]value.p[i];
+        }
+    }
 
     return 0;
 }

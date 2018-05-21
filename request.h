@@ -13,4 +13,15 @@ typedef struct {
     uint8_t token;
 } coap_request_t;
 
-int createreq(coap_message_t* msg, coap_request_t* req)
+/* 
+*   the client does not need to save its own endpoint data, nor does it need to know
+*   what payload it sent. It only needs to know what media type it should expect and
+*   what token to match it to.
+*/
+typedef struct {
+    uint8_t *mediatype;     //from accept option
+    uint8_t token;
+} coap_clientrequest_t;
+
+int handlereq(coap_message_t* msg, coap_request_t* req);
+int makereq(coap_message_t* outmsg, coap_clientrequest_t* req);
