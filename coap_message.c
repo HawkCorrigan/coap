@@ -29,6 +29,9 @@ int parse(coap_message_t *message, uint8_t *bitstring, size_t udp_message_len) {
     int readpos = 0;
     message->header=malloc(sizeof(coap_header_t));
     int success = parseHeader(message->header, bitstring);
+    if (success!=0){
+        return -1;
+    }
     readpos = 4;
     
 
@@ -59,19 +62,21 @@ int parse(coap_message_t *message, uint8_t *bitstring, size_t udp_message_len) {
             exit(1);
         }
         if (delta == 13) {
-            delta=bitstring[++readpos]+13;
+            delta=(bitstring[++readpos]+13);
         }
 
         if (delta == 14) {
-            delta = (bitstring[++readpos] << 8) | bitstring[++readpos]+269;
+            delta = bitstring[++readpos] << 8;
+            delta |= bitstring[++readpos]+269;
         }
 
         if (o_len == 13) {
-            o_len = bitstring[++readpos]+13;
+            o_len = (bitstring[++readpos]+13);
         }
 
         if (o_len == 14) {
-            o_len = (bitstring[++readpos] << 8) | bitstring[++readpos]+269;
+            o_len = bitstring[++readpos] << 8; 
+            o_len |= bitstring[++readpos]+269;
         }
 
         message->opts[optCount-1].number=delta+rollingDelta;
@@ -119,7 +124,7 @@ int dumpMessage(coap_message_t *msg){
 
 
 	if (msg->payload.len != 0) {
-		printf("payload: %s\n", msg->payload);
+		printf("payload: %s\n", msg->payload.p);
 	} 
 	else {
 		printf("no payload available\n");
@@ -196,3 +201,19 @@ int build(uint8_t *buf, size_t buflen, const coap_message_t *msg){
     }
     return 0;
 }
+/*
+int coapMakeResponse(coap_message_t *msg){
+    msg->header.vers=1;
+    msg->header.code_status=COAP_TYPE_ACKNOWLEDGE;
+    msg->header.tkl=0;
+    msg->header.code=code;
+    msg->header.message_id=message_id;
+
+    if(token){
+        msg->header.tkl=tkl;
+        msg->header.token=token;
+    }
+
+    msg->payload.p=content;
+    msg->payload.len=content_length;
+}*/
