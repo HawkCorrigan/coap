@@ -8,6 +8,7 @@
 #include <netdb.h>
 
 #include "coap_message.h"
+#include "errors.h"
 
 #define BUF_SIZE 512
 
@@ -19,7 +20,22 @@ void memread(char* buf, int count){
 	
 
     coap_message_t *message = malloc(sizeof(coap_message_t));
-	int success = parse(message, (uint8_t*) buf, count);
+	int error = parse(message, (uint8_t*) buf, count);
+	
+	switch (error) {
+		case ERROR_WRONG_VERSION:
+			return;
+		case ERROR_MESSAGE_FORMAT:
+			printf("Recieved message was formatted wrongly.");
+			return;
+		case ERROR_WRONG_CONTEXT: //This error cannot have happend at this point.
+			printf("Recieved message had wrong/unknown context");
+			return;
+		case ERROR_UNRECOGNISED_OPTION: //This error cannot have happend at this point.
+		    printf("Recieved message had an unknown option");
+			return;
+	}
+
 	printf("proto vers: %d\n", message->header->vers);
 	printf("mess type: %d\n", message->header->type);
 	printf("tkn len: %d\n", message->header->token_len);
