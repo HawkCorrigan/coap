@@ -28,7 +28,12 @@ int parseHeader(coap_header_t *header, uint8_t *bitstring) {
 
 int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len) {
     int readpos = 0;
-    message->header=malloc(sizeof(coap_header_t));
+    message->header = malloc(sizeof(coap_header_t));
+
+    if (NULL == message->header) {
+        return ERROR_MALLOC_MESSAGE_HEADER;
+    }
+
     int error = parseHeader(message->header, bitstring);
     
     if (SUCCESS != error) {
@@ -51,11 +56,19 @@ int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len) {
 
     message->opts = malloc(sizeof(coap_option_t));
 
+    if (NULL == message->opts) {
+        return ERROR_MALLOC_MESSAGE_OPTS;
+    }
+
     int optCount = 0;
     uint16_t rollingDelta=0;
     while (bitstring[readpos] != 0xFF && readpos < udp_message_len) {
         optCount++;
         message->opts = realloc(message->opts, (size_t) (optCount * sizeof(coap_option_t)));
+
+        if (NULL == message->opts) {
+            return ERROR_MALLOC_MESSAGE_OPTS;
+        }
 
         uint8_t cbyte = bitstring[readpos];
 
@@ -64,7 +77,6 @@ int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len) {
 
         if (delta == 15 || o_len == 15) {
             return ERROR_MESSAGE_FORMAT;
-            exit(1);
         }
         if (delta == 13) {
             delta=bitstring[++readpos]+13;
@@ -107,6 +119,10 @@ int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len) {
 
     message->payload.p = malloc((payload_byte_count + 1) * sizeof(uint8_t));
 
+    if (NULL == message->payload.p) {
+        return ERROR_MALLOC_MESSAGE_PAYLOAD;
+    }
+
     memcpy(message->payload.p, bitstring + readpos, (size_t) payload_byte_count);
 
     message->payload.p[payload_byte_count] = '\0';
@@ -124,16 +140,19 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
     buf[3] = msg->header->message_id;
 
     uint8_t *p =buf+4;
+    
     if (msg->header->token_len > 0){
         memcpy(p, msg->token.p, msg->header->token_len);
     }
-    p+=msg->header->token_len;
+    
+    p += msg->header->token_len;
 
     uint8_t runningDelta=0;
     for(int  i = 0; i < msg->numopts; i++)
     {
         int optDelta = msg->opts[i].number - runningDelta;
         uint8_t length, delta;
+        
         if (optDelta < 13){
             delta= 0xFF & optDelta;
         }
@@ -143,6 +162,7 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
         else if (optDelta <= 269+0xFFFF){
             delta = 14;
         }
+        
         int optLength = msg->opts[i].value.len;
         if (optLength < 13){
             length= 0xFF & optLength;
@@ -171,7 +191,7 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
         }
 
         memcpy(p, msg->opts[i].value.p, msg->opts[i].value.len);
-        p+=msg->opts[i].value.len;
+        p += msg->opts[i].value.len;
         runningDelta = msg->opts[i].number;
     }
 
