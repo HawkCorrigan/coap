@@ -216,4 +216,30 @@ int coapMakeResponse(coap_message_t *msg){
 
     msg->payload.p=content;
     msg->payload.len=content_length;
-}*/
+}
+
+const coap_endpoint_t endpoints[] = 
+{
+    {COAP_METHOD_GET, well_known_handler, &path_well_known}, //todo ct?
+
+}
+
+int coap_request_handler(){
+    const coap_endpoint_t *endpoint = endpoints;
+
+    while (NULL!=endpoints->handler){
+        if(endpoint->code != msg->code)
+            goto next;
+        
+        path=getOption(msg, COAP_OPTION_URI_PATH)
+
+        if(endpoint->path != path)
+            goto next;
+        
+        return endpoint->handler();    
+
+    next:
+        *ep++;
+    }
+    coap_make_message(0);
+}
