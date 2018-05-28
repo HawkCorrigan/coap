@@ -133,6 +133,9 @@ int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len) {
 
 
 int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
+
+    buf = realloc(buf, 4 * sizeof(uint8_t));
+
     buf[0] = (msg->header->vers & 0x03) << 6;
     buf[0] |= (msg->header->type & 0x03 ) << 4;
     buf[0] |= (msg->header->token_len&0x0F);
@@ -140,15 +143,20 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
     buf[2] = msg->header->message_id >> 8;
     buf[3] = msg->header->message_id;
 
-    uint8_t *p =buf+4;
-    
+    *buflen = 4;
+    uint8_t *p = buf + 4;
+
     if (msg->header->token_len > 0){
+        *buflen += msg->header->token_len;
+        buf = realloc(buf, ((uint8_t) *buflen) * sizeof(uint8_t));
+        if (buf == NULL)
+            return ERROR_MALLOC_MESSAGE_TOKEN;
         memcpy(p, msg->token.p, msg->header->token_len);
     }
-    
+
     p += msg->header->token_len;
 
-    uint8_t runningDelta=0;
+    uint8_t runningDelta = 0;
     for(int  i = 0; i < msg->numopts; i++)
     {
         int optDelta = msg->opts[i].number - runningDelta;
@@ -164,12 +172,13 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
             delta = 14;
         }
         
+        *buflen++;
         int optLength = msg->opts[i].value.len;
         if (optLength < 13){
             length= 0xFF & optLength;
         }
         else if (optLength <= 13+0xFF){
-            length= 13;
+            length = 13;
         }
         else if (optLength <= 269+0xFFFF){
             length = 14;
@@ -177,19 +186,27 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
         *p++ = delta<<4 | length;
         if(delta==13){
             *p++=optDelta-13;
+            *buflen++;
         }
         if(delta==14){
-            *p++=(optDelta-269)>>8;
-            *p++=(0xFF & (optDelta-269));
+            *p++ = (optDelta - 269) >> 8;
+            *p++ = (0xFF & (optDelta - 269));
+            *buflen += 2;
         }
 
         if(length==13){
             *p++ = msg->opts[i].value.len -13;
+            *buflen++;
         }
         if(length==14){
             *p++ = (msg->opts[i].value.len-269)>>8;
             *p++ = (0xFF & (msg->opts[i].value.len-269));
+            *buflen += 2;
         }
+
+        buf = realloc(buf, ((uint8_t) *buflen) * sizeof(uint8_t));
+        if (buf == NULL)
+            return ERROR_MALLOC_MESSAGE_TOKEN;
 
         memcpy(p, msg->opts[i].value.p, msg->opts[i].value.len);
         p += msg->opts[i].value.len;
@@ -197,8 +214,14 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
     }
 
     if (msg->payload.len > 0){
+        *buflen += 1 + msg->payload.len;
+        buf = realloc(buf, ((uint8_t) *buflen) * sizeof(uint8_t));
+        if (buf == NULL)
+            return ERROR_MALLOC_MESSAGE_TOKEN;
+
         *p++=0xFF;
         memcpy(p, msg->payload.p, msg->payload.len);
     }
+
     return SUCCESS;
 }
