@@ -1,6 +1,6 @@
 CFLAGS = -g -Wall -Wpedantic
 COBJ = clientMain.c udpSender.o udpListener.o coapMessage.o
-SOBJ = serverMain.c udpListener.o udpSender.o coapMessage.o
+SOBJ = coapServer.c udpListener.o udpSender.o coapMessage.o
 CC = /usr/bin/gcc
 
 all: coap-client coap-server

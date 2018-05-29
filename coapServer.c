@@ -32,7 +32,8 @@ int main()
 	* parse the raw UDP data, and process it
 	*/
 
-	parse(msg, msgbuf, *msg_size);
+	parse(msg, (uint8_t*)msgbuf, *msg_size);
+    dumpMessage(msg);
 }
 
 void buildExampleMsg(char* content, size_t size)
