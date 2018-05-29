@@ -18,6 +18,9 @@ int main(int argc, char const *argv[])
     coap_message_t *message = malloc(sizeof(coap_message_t));
     message->header = malloc(sizeof(coap_header_t));
     int opt;
+
+    initEmptyMessage(message);
+
     while ((opt = getopt(argc, argv, "Ne:f:h:m:o:p:O:T:")) != -1)
     {
         switch (opt)
@@ -34,7 +37,28 @@ int main(int argc, char const *argv[])
             host = optarg;
             break;
         case 'm':
-            //TODO
+            message->header->code_type = MESSAGE_TYPE_REQUEST;
+            switch (optarg) {
+                case 'get':
+                case 'GET':
+                message->header->code_status = 1;
+                break;
+                case 'post':
+                case 'POST':
+                message->header->code_status = 1;
+                break;
+                case 'put':
+                case 'PUT':
+                message->header->code_status = 1;
+                break;
+                case 'delete':
+                case 'DELETE':
+                message->header->code_status = 1;
+                break;
+                default:
+                printf("Unknown method %s.", optarg);
+                usage(argv[0]);
+            }
             break;
         case 'o':
             //TODO
@@ -51,14 +75,16 @@ int main(int argc, char const *argv[])
             memcpy(message->token.p, optarg, message->token.len);
             break;
         case 'N':
-            //TODO
+            message->header->type = 1;
             break;
         default:
             usage(argv[0]);
             exit(1);
         }
     }
-    uint8_t * package;
+
+    uint8_t *package = malloc(sizeof(uint8_t));
+    size_t *buflen = malloc(sizeof(size_t));
     build(package, buflen, message);
     startSender(host, port, package, buflen);
     return 0;

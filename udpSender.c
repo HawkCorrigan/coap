@@ -9,7 +9,7 @@
 
 #include "coapMessage.h"
 
-void startSender(const char *host, const char *port, const char *message)
+void startSender(const char *host, const char *port, const char *package, const size_t * size)
 {
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -30,9 +30,8 @@ void startSender(const char *host, const char *port, const char *message)
     {
         exit(1);
     }
-    char* content = "Teststuff\0";
-    size_t size=10;
-    if (sendto(fd,content,size,0,
+
+    if (sendto(fd,package,*size,0,
     res->ai_addr,res->ai_addrlen)==-1) {
         exit(1);
     }

@@ -5,6 +5,25 @@
 #include "coapMessage.h"
 #include "errors.h"
 
+int initEmptyMessage(coap_message_t *msg) {
+    msg->header = malloc(sizeof(coap_header_t));
+    msg->header->vers = 1;
+    msg->header->type = 0;
+    msg->header->token_len = 0;
+    msg->header->code_type = 0;
+    msg->header->code_status = 0;
+    msg->header->message_id = 0;
+
+    msg->token.len = 0;
+    msg->token.p = NULL;
+
+    msg->numopts = 0;
+    msg->opts = NULL;
+    
+    msg->payload.len = 0;
+    msg->payload.p = NULL;
+}
+
 int parseHeader(coap_header_t *header, uint8_t *bitstring) {
 
     header->vers = ((bitstring[0] & 0b11000000)>>6);

@@ -28,5 +28,13 @@ typedef struct {
     coap_buffer_t payload;
 } coap_message_t;
 
+enum {
+    MESSAGE_TYPE_REQUEST = 0,
+    MESSAGE_TYPE_RESPONSE_SUCCESS = 2,
+    MESSAGE_TYPE_RESPONSE_ECLIENT = 4,
+    MESSAGE_TYPE_RESPONSE_ESERVER = 5
+};
+
+int initEmptyMessage(coap_message_t *);
 int parseHeader(coap_header_t *header, uint8_t *bitstring);
 int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len);
