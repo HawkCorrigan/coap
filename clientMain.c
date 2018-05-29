@@ -5,11 +5,12 @@
 #include <getopt.h>
 #include "coapMessage.h"
 #include "udpSender.h"
+#include "idgen.h"
 
 
 void usage(const char *program)
 {
-    const char *p;
+    const char *p = NULL;
 
     p = strrchr(program, '/');
     if (p)
@@ -41,7 +42,7 @@ void addOption(coap_message_t *msg, char *optnum, char *optvalue) {
 }
 int main(int argc, char const *argv[])
 {
-    printf("Me!");
+    initialize();
     if (argc == 1)
     {
         usage(argv[0]);
@@ -113,6 +114,8 @@ int main(int argc, char const *argv[])
             exit(1);
         }
     }
+    if (message->header->message_id == 0)
+        message->header->message_id = (uint16_t)getRandom();
 
     uint8_t *package = malloc(sizeof(uint8_t));
     size_t *buflen = malloc(sizeof(size_t));

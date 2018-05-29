@@ -1,51 +1,24 @@
-#include <stdio.h>
 #include <stdint.h>
 #include <time.h>
-
-uint16_t seed = 0;
-uint16_t smid[2];
-uint8_t stid[2];
-
-/*
-* initialise random seed with current time in seconds, performed only once
-* tid seed is time upper 8 bit and time lower 8 bit
-* mid seed is time and time inverted
-*/
-
-void initialise()
+static uint64_t s[16];
+static int p;
+//initialize state array with time since epoch in nanoseconds
+void initialize()
 {
-    seed = time(0);
-    stid[0] = seed;
-    stid[1] = (seed >> 8);
-
-    smid[0] = seed;
-    smid[1] = ~seed;
-}
-
-uint8_t tidxorshift()
-{
-    if(seed == 0){
-        initialise();
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    unsigned char i = 0;
+    for (i=0;i<16;i++){
+        s[i] = ts.tv_nsec;
     }
-    uint8_t x = stid[0];
-	uint8_t y = stid[1];
-	stid[0] = y;
-	x ^= x << 3;
-	stid[1] = x ^ y ^ (x >> 7) ^ (y >> 6);
-	return stid[1] + y;
-
 }
-
-uint16_t midxorshift()
-{
-    if(seed == 0){
-        initialise();
-    }
-    uint16_t x = smid[0];
-	uint16_t y = smid[1];
-	smid[0] = y;
-	x ^= x << 13;
-	smid[1] = x ^ y ^ (x >> 9) ^ (y >> 5);
-	return smid[1] + y;
-
+//https://en.wikipedia.org/wiki/Xorshift
+uint64_t getRandom() {
+	const uint64_t s0 = s[p++];
+	uint64_t s1 = s[p &= 15];
+	s1 ^= s1 << 31; // a
+	s1 ^= s1 >> 11; // b
+	s1 ^= s0 ^ (s0 >> 30); // c
+	s[p] = s1;
+	return s1 * (uint64_t)1181783497276652981;
 }
