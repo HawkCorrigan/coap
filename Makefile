@@ -1,5 +1,5 @@
 CFLAGS = -g -Wall
-OBJ = coapServer.o udpListener.o udpSender.o coap_message.o
+OBJ = udpListener.o udpSender.o coapMessage.o
 CC = /usr/bin/gcc
  
 coapServer : $(OBJ)
