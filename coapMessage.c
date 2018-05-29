@@ -22,6 +22,8 @@ int initEmptyMessage(coap_message_t *msg) {
     
     msg->payload.len = 0;
     msg->payload.p = NULL;
+    
+    return 0;
 }
 
 int parseHeader(coap_header_t *header, uint8_t *bitstring) {
