@@ -19,6 +19,8 @@ int main(int argc, char const *argv[])
     message->header = malloc(sizeof(coap_header_t));
     int opt = 0;
 
+    extern char* optarg;
+
     initEmptyMessage(message);
 
     while ((opt = getopt(argc, argv, "Ne:f:h:m:o:p:O:T:")) != -1)

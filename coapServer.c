@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "udpListener.h"
 #include "udpSender.h"
-#include "coap_message.h"
+#include "coapMessage.h"
 
 void createExampleMsg(char* content, size_t size);
 void memread(char* buf, coap_message_t *msg);
@@ -17,7 +17,7 @@ int main()
 	* save the received UDP data into msgbuf
 	*/
 
-    if(startListener(msgbuf, msg_size) != 0) {
+    if(startListener(msgbuf) != 0) {
         printf("udpListener failed to bind");
         return -1;
     }
@@ -33,11 +33,6 @@ int main()
 	*/
 
 	parse(msg, msgbuf, *msg_size);
-
-	char *sendbuf = malloc(sizeof(char)* (*msg_size));
-	build(sendbuf, msg_size, msg);
-	startSender(sendbuf, msg_size);
-	free(msg);
 }
 
 void buildExampleMsg(char* content, size_t size)

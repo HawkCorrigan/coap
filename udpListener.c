@@ -58,7 +58,7 @@ void memread(char* buf, int count){
 
 
 	if (message->payload.len != 0) {
-		printf("payload: %s\n", message->payload);
+		printf("payload: %s\n", message->payload.p);
 	} else {
 		printf("no payload available\n");
 	}
@@ -66,7 +66,7 @@ void memread(char* buf, int count){
 	printf("\n");
 }
 
-void startListener()
+void startListener(char* buf)
 {
 	/*
 	 * one of host or port can be NULL, if unknown
@@ -136,7 +136,6 @@ void startListener()
 			continue;
 		} else {
 			printf("received %zu bytes of data \n", count);
-			*msg_size=count;
 			return 0;
 		}
 
