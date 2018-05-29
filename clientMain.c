@@ -1,9 +1,44 @@
 #include <stdint.h>
+#include <stdlib.h>
 #include <unistd.h>
-
+#include <string.h>
+#include <getopt.h>
 #include "coapMessage.h"
 #include "udpSender.h"
 
+
+void usage(const char *program)
+{
+    const char *p;
+
+    p = strrchr(program, '/');
+    if (p)
+        program = ++p;
+
+    fprintf(stderr,
+            "usage: %s [OPTIONS] URI\n\n"
+            "\tURI can be an absolute or relative coap URI,\n"
+            //"\t-a addr\tthe local interface address to use\n"
+            "\t-e text\t\tinclude text as payload (use percent-encoding for\n"
+            "\t\t\tnon-ASCII characters)\n"
+            "\t-f file\t\tfile to send with PUT/POST (use '-' for STDIN)\n"
+            "\t-h host\t\thostname or ip of remote\n"
+            "\t-m method\trequest method (get|put|post|delete), default is 'get'\n"
+            "\t-N\t\tsend NON-confirmable message\n"
+            "\t-o num,text\tadd option num with contents text to request\n"
+            //"\t-O file\t\toutput received data to this file (use '-' for STDOUT)\n"
+            "\t-p port\n"
+            "\t-T token\tinclude specified token\n",
+            program);
+}
+
+void addOption(coap_message_t *msg, char *optnum, char *optvalue) {
+    msg->numopts++;
+    msg->opts = realloc(msg->opts, msg->numopts * sizeof(coap_option_t));
+    msg->opts[msg->numopts - 1].number = (uint8_t)atoi(optnum);
+    msg->opts[msg->numopts - 1].value.len = strlen(optvalue);
+    msg->opts[msg->numopts - 1].value.p = (uint8_t *) optvalue;
+}
 int main(int argc, char const *argv[])
 {
     if (argc == 1)
@@ -14,7 +49,6 @@ int main(int argc, char const *argv[])
 
     const char *host = "localhost";
     const char *port = "5683";
-    const char *payload = NULL;
     coap_message_t *message = malloc(sizeof(coap_message_t));
     message->header = malloc(sizeof(coap_header_t));
     int opt = 0;
@@ -23,7 +57,7 @@ int main(int argc, char const *argv[])
 
     initEmptyMessage(message);
 
-    while ((opt = getopt(argc, argv, "Ne:f:h:m:o:p:O:T:")) != -1)
+    while ((opt = getopt(argc, (char* const*)argv, "Ne:f:h:m:o:p:O:T:")) != -1)
     {
         switch (opt)
         {
@@ -82,39 +116,6 @@ int main(int argc, char const *argv[])
     uint8_t *package = malloc(sizeof(uint8_t));
     size_t *buflen = malloc(sizeof(size_t));
     build(package, buflen, message);
-    startSender(host, port, package, buflen);
+    startSender(host, port, (char*)package, buflen);
     return 0;
-}
-
-void usage(const char *program)
-{
-    const char *p;
-
-    p = strrchr(program, '/');
-    if (p)
-        program = ++p;
-
-    fprintf(stderr,
-            "usage: %s [OPTIONS] URI\n\n"
-            "\tURI can be an absolute or relative coap URI,\n"
-            //"\t-a addr\tthe local interface address to use\n"
-            "\t-e text\t\tinclude text as payload (use percent-encoding for\n"
-            "\t\t\tnon-ASCII characters)\n"
-            "\t-f file\t\tfile to send with PUT/POST (use '-' for STDIN)\n"
-            "\t-h host\t\thostname or ip of remote\n"
-            "\t-m method\trequest method (get|put|post|delete), default is 'get'\n"
-            "\t-N\t\tsend NON-confirmable message\n"
-            "\t-o num,text\tadd option num with contents text to request\n"
-            //"\t-O file\t\toutput received data to this file (use '-' for STDOUT)\n"
-            "\t-p port\n"
-            "\t-T token\tinclude specified token\n",
-            program);
-}
-
-void addOption(coap_message_t *msg, const char *optnum, const char *optvalue) {
-    msg->numopts++;
-    msg->opts = realloc(msg->opts, msg->numopts * sizeof(coap_option_t));
-    msg->opts[msg->numopts - 1].number = atoi(*optnum);
-    msg->opts[msg->numopts - 1].value.len = strlen(optvalue);
-    msg->opts[msg->numopts - 1].value.p = optvalue;
 }
