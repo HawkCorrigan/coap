@@ -38,22 +38,22 @@ int main(int argc, char const *argv[])
             break;
         case 'm':
             message->header->code_type = MESSAGE_TYPE_REQUEST;
-            if (strcmp(optarg, "get") || strcmp(optarg, "GET")) {
+            if (!strcmp(optarg, "get") || !strcmp(optarg, "GET")) {
             printf("%s", optarg);
                 message->header->code_status = 1;
                 printf("Status: %i\n", message->header->code_status);
             } else
-            if (strcmp(optarg, "post") || strcmp(optarg, "POST")) {
+            if (!strcmp(optarg, "post") || !strcmp(optarg, "POST")) {
             printf("%s", optarg);
                 message->header->code_status = 2;
                 printf("Status: %i\n", message->header->code_status);
             } else
-            if (strcmp(optarg, "put") || strcmp(optarg, "PUT")) {
+            if (!strcmp(optarg, "put") || !strcmp(optarg, "PUT")) {
             printf("%s", optarg);
                 message->header->code_status = 3;
                 printf("Status: %i\n", message->header->code_status);
             } else
-            if (strcmp(optarg, "delete") || strcmp(optarg, "DELETE")) {
+            if (!strcmp(optarg, "delete") || !strcmp(optarg, "DELETE")) {
                 printf("%s", optarg);
                 message->header->code_status = 4;
                 printf("%i\n", message->header->code_status);
