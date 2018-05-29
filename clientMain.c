@@ -17,7 +17,7 @@ int main(int argc, char const *argv[])
     const char *payload = NULL;
     coap_message_t *message = malloc(sizeof(coap_message_t));
     message->header = malloc(sizeof(coap_header_t));
-    int opt;
+    int opt = 0;
 
     initEmptyMessage(message);
 
@@ -38,30 +38,35 @@ int main(int argc, char const *argv[])
             break;
         case 'm':
             message->header->code_type = MESSAGE_TYPE_REQUEST;
-            switch (optarg) {
-                case 'get':
-                case 'GET':
+            if (strcmp(optarg, "get") || strcmp(optarg, "GET")) {
+            printf("%s", optarg);
                 message->header->code_status = 1;
-                break;
-                case 'post':
-                case 'POST':
-                message->header->code_status = 1;
-                break;
-                case 'put':
-                case 'PUT':
-                message->header->code_status = 1;
-                break;
-                case 'delete':
-                case 'DELETE':
-                message->header->code_status = 1;
-                break;
-                default:
+                printf("Status: %i\n", message->header->code_status);
+            } else
+            if (strcmp(optarg, "post") || strcmp(optarg, "POST")) {
+            printf("%s", optarg);
+                message->header->code_status = 2;
+                printf("Status: %i\n", message->header->code_status);
+            } else
+            if (strcmp(optarg, "put") || strcmp(optarg, "PUT")) {
+            printf("%s", optarg);
+                message->header->code_status = 3;
+                printf("Status: %i\n", message->header->code_status);
+            } else
+            if (strcmp(optarg, "delete") || strcmp(optarg, "DELETE")) {
+                printf("%s", optarg);
+                message->header->code_status = 4;
+                printf("%i\n", message->header->code_status);
+            } else {
+            printf("%s", optarg);
                 printf("Unknown method %s.", optarg);
                 usage(argv[0]);
             }
+
+            printf("%i\n", message->header->code_status);
             break;
         case 'o':
-            //TODO
+            addOption(message, strtok(optarg, ",:="), strtok(NULL, ",:="));
             break;
         case 'O':
             //TODO
@@ -105,12 +110,12 @@ void usage(const char *program)
             "\t-e text\t\tinclude text as payload (use percent-encoding for\n"
             "\t\t\tnon-ASCII characters)\n"
             "\t-f file\t\tfile to send with PUT/POST (use '-' for STDIN)\n"
-            "\t-h host\n"
-            "\t-m method\trequest method (get|put|post|delete|fetch|patch|ipatch), default is 'get'\n"
+            "\t-h host\t\thostname or ip of remote\n"
+            "\t-m method\trequest method (get|put|post|delete), default is 'get'\n"
             "\t-N\t\tsend NON-confirmable message\n"
-            "\t-o file\t\toutput received data to this file (use '-' for STDOUT)\n"
+            "\t-o num,text\tadd option num with contents text to request\n"
+            //"\t-O file\t\toutput received data to this file (use '-' for STDOUT)\n"
             "\t-p port\n"
-            "\t-O num,text\tadd option num with contents text to request\n"
             "\t-T token\tinclude specified token\n",
             program);
 }

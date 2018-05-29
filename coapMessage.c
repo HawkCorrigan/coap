@@ -153,12 +153,14 @@ int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len) {
 
 int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
 
-    buf = realloc(buf, 4 * sizeof(uint8_t));
 
+    buf = realloc(buf, 4 * sizeof(uint8_t));
+    printf("%i",msg->header->code_status);
     buf[0] = (msg->header->vers & 0x03) << 6;
     buf[0] |= (msg->header->type & 0x03 ) << 4;
     buf[0] |= (msg->header->token_len&0x0F);
-    buf[1] = msg->header->code_type;
+    buf[1] = msg->header->code_type << 5;
+    buf[1] |= msg->header->code_status;
     buf[2] = msg->header->message_id >> 8;
     buf[3] = msg->header->message_id;
 
@@ -192,6 +194,8 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
         }
         
         *buflen++;
+
+        printf("Added option %d", msg->opts->number);
         int optLength = msg->opts[i].value.len;
         if (optLength < 13){
             length= 0xFF & optLength;
