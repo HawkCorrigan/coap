@@ -39,31 +39,20 @@ int main(int argc, char const *argv[])
         case 'm':
             message->header->code_type = MESSAGE_TYPE_REQUEST;
             if (!strcmp(optarg, "get") || !strcmp(optarg, "GET")) {
-            printf("%s", optarg);
                 message->header->code_status = 1;
-                printf("Status: %i\n", message->header->code_status);
             } else
             if (!strcmp(optarg, "post") || !strcmp(optarg, "POST")) {
-            printf("%s", optarg);
                 message->header->code_status = 2;
-                printf("Status: %i\n", message->header->code_status);
             } else
             if (!strcmp(optarg, "put") || !strcmp(optarg, "PUT")) {
-            printf("%s", optarg);
                 message->header->code_status = 3;
-                printf("Status: %i\n", message->header->code_status);
             } else
             if (!strcmp(optarg, "delete") || !strcmp(optarg, "DELETE")) {
-                printf("%s", optarg);
                 message->header->code_status = 4;
-                printf("%i\n", message->header->code_status);
             } else {
-            printf("%s", optarg);
                 printf("Unknown method %s.", optarg);
                 usage(argv[0]);
             }
-
-            printf("%i\n", message->header->code_status);
             break;
         case 'o':
             addOption(message, strtok(optarg, ",:="), strtok(NULL, ",:="));
@@ -118,4 +107,12 @@ void usage(const char *program)
             "\t-p port\n"
             "\t-T token\tinclude specified token\n",
             program);
+}
+
+void addOption(coap_message_t *msg, const char *optnum, const char *optvalue) {
+    msg->numopts++;
+    msg->opts = realloc(msg->opts, msg->numopts * sizeof(coap_option_t));
+    msg->opts[msg->numopts - 1].number = atoi(*optnum);
+    msg->opts[msg->numopts - 1].value.len = strlen(optvalue);
+    msg->opts[msg->numopts - 1].value.p = optvalue;
 }
