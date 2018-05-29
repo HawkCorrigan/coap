@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <malloc.h>
 
 typedef struct {
@@ -37,4 +38,6 @@ enum {
 
 int initEmptyMessage(coap_message_t *);
 int parseHeader(coap_header_t *header, uint8_t *bitstring);
-int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len);
+int parse(coap_message_t *message, uint8_t *bitstring, size_t udp_message_len);
+int build(uint8_t *buf, size_t buflen, const coap_message_t *msg);
+int dumpMessage(coap_message_t *msg);

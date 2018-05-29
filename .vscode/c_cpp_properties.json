@@ -10,7 +10,8 @@
             },
             "includePath": [
                 "${workspaceFolder}",
-                "/usr/lib/gcc"
+                "/usr/lib/gcc",
+                "/usr/includes"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",

@@ -35,4 +35,5 @@ void startSender(const char *host, const char *port, const char *package, const 
     res->ai_addr,res->ai_addrlen)==-1) {
         exit(1);
     }
+
 }

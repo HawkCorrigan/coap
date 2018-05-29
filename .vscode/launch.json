@@ -6,7 +6,7 @@
     "configurations": [
         
         {
-            "name": "(gdb) Launch",
+            "name": "debug",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/coapServer",
@@ -14,7 +14,7 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": true,
+            "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [
                 {

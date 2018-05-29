@@ -46,7 +46,7 @@ int parseHeader(coap_header_t *header, uint8_t *bitstring) {
     return SUCCESS;
 }
 
-int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len) {
+int parse(coap_message_t *message, uint8_t *bitstring, size_t udp_message_len) {
     int readpos = 0;
     message->header = malloc(sizeof(coap_header_t));
 
@@ -99,19 +99,21 @@ int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len) {
             return ERROR_MESSAGE_FORMAT;
         }
         if (delta == 13) {
-            delta=bitstring[++readpos]+13;
+            delta=(bitstring[++readpos]+13);
         }
 
         if (delta == 14) {
-            delta = (bitstring[++readpos] << 8) | bitstring[++readpos]+269;
+            delta = bitstring[++readpos] << 8;
+            delta |= bitstring[++readpos]+269;
         }
 
         if (o_len == 13) {
-            o_len = bitstring[++readpos]+13;
+            o_len = (bitstring[++readpos]+13);
         }
 
         if (o_len == 14) {
-            o_len = (bitstring[++readpos] << 8) | bitstring[++readpos]+269;
+            o_len = bitstring[++readpos] << 8; 
+            o_len |= bitstring[++readpos]+269;
         }
 
         message->opts[optCount-1].number = delta+rollingDelta;
@@ -150,6 +152,29 @@ int parse(coap_message_t *message, uint8_t *bitstring, int udp_message_len) {
     return SUCCESS;
 }
 
+int dumpMessage(coap_message_t *msg){
+    printf("proto vers: %d\n", msg->header->vers);
+	printf("mess type: %d\n", msg->header->type);
+	printf("tkn len: %d\n", msg->header->token_len);
+	printf("msg code: %d.%d\n", msg->header->code_type, msg->header->code_status);
+	int i;
+	for(i=0;i<msg->numopts;i++){
+		printf("option: %d.%02x\n", msg->opts[i].number,*msg->opts[i].value.p);
+	}
+	printf("msg id: %d\n", msg->header->message_id);
+
+
+	if (msg->payload.len != 0) {
+		printf("payload: %s\n", msg->payload.p);
+	} 
+	else {
+		printf("no payload available\n");
+	}
+
+	printf("\n");
+
+    return 0;
+}
 
 int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
 

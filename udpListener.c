@@ -82,8 +82,8 @@ void startListener()
 	hints.ai_protocol = 0;
 	hints.ai_flags = AI_PASSIVE|AI_ADDRCONFIG;
 	hints.ai_canonname = NULL;
-    hints.ai_addr = NULL;
-    hints.ai_next = NULL;
+	hints.ai_addr = NULL;
+	hints.ai_next = NULL;
 	
 	struct addrinfo *result, *tmp;
 	int fd, sockfd;
@@ -109,7 +109,7 @@ void startListener()
 		
 		if (bind(sockfd, tmp->ai_addr, tmp->ai_addrlen) != 0) {
 			fprintf(stderr, "Error with Bind: %s \n",strerror(errno));
-			exit(EXIT_FAILURE);
+			return -1;
 		}
 		else {
 			printf("Binding with %i \n", sockfd);
@@ -127,7 +127,6 @@ void startListener()
 	 
 	for(;;) {
 
-		char buf[BUF_SIZE];
 		struct sockaddr_storage peer_addr;
 		socklen_t peer_addr_len = sizeof(peer_addr);
 
@@ -137,8 +136,10 @@ void startListener()
 			continue;
 		} else {
 			printf("received %zu bytes of data \n", count);
-			memread(buf, count);
+			*msg_size=count;
+			return 0;
 		}
 
 	}
+
 }
