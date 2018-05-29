@@ -36,6 +36,13 @@ enum {
     MESSAGE_TYPE_RESPONSE_ESERVER = 5
 };
 
+enum {
+    REQUEST_TYPE_GET = 1,
+    REQUEST_TYPE_POST,
+    REQUEST_TYPE_PUT,
+    REQUEST_TYPE_DELETE
+};
+
 int initEmptyMessage(coap_message_t *);
 int parseHeader(coap_header_t *header, uint8_t *bitstring);
 int parse(coap_message_t *message, uint8_t *bitstring, size_t udp_message_len);

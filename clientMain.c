@@ -76,16 +76,16 @@ int main(int argc, char const *argv[])
         case 'm':
             message->header->code_type = MESSAGE_TYPE_REQUEST;
             if (!strcmp(optarg, "get") || !strcmp(optarg, "GET")) {
-                message->header->code_status = 1;
+                message->header->code_status = REQUEST_TYPE_GET;
             } else
             if (!strcmp(optarg, "post") || !strcmp(optarg, "POST")) {
-                message->header->code_status = 2;
+                message->header->code_status = REQUEST_TYPE_POST;
             } else
             if (!strcmp(optarg, "put") || !strcmp(optarg, "PUT")) {
-                message->header->code_status = 3;
+                message->header->code_status = REQUEST_TYPE_PUT;
             } else
             if (!strcmp(optarg, "delete") || !strcmp(optarg, "DELETE")) {
-                message->header->code_status = 4;
+                message->header->code_status = REQUEST_TYPE_DELETE;
             } else {
                 printf("Unknown method %s.", optarg);
                 usage(argv[0]);
