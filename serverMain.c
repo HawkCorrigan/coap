@@ -6,6 +6,6 @@
 
 int main(int argc, char const *argv[])
 {
-    startListener();
+    //startListener();
     return 0;
 }

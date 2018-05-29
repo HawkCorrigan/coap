@@ -10,7 +10,6 @@ coap-client : $(CBJ)
 
 coap-server : $(SOBJ)
 	$(CC) $(CFLAGS) -o coap-server $(SOBJ)
- 
+
 %.o: %.c
 	$(CC) $(CFLAGS) -c $<
-

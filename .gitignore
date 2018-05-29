@@ -52,3 +52,5 @@ fabric.properties
 
 # Makestuff
 *.o
+coap-client
+coap-server

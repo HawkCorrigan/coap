@@ -41,6 +41,7 @@ void addOption(coap_message_t *msg, char *optnum, char *optvalue) {
 }
 int main(int argc, char const *argv[])
 {
+    printf("Me!");
     if (argc == 1)
     {
         usage(argv[0]);
@@ -62,8 +63,8 @@ int main(int argc, char const *argv[])
         switch (opt)
         {
         case 'e':
-            message->payload.len = sizeof(optarg);
-            message->payload.p = malloc(message->payload.len);
+            message->payload.len = strlen(optarg);
+            message->payload.p = malloc(message->payload.len * sizeof(char));
             memcpy(message->payload.p, optarg, message->payload.len);
             break;
         case 'f':
