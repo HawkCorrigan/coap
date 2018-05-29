@@ -19,7 +19,7 @@ int main()
 	* save the received UDP data into msgbuf
 	*/
 
-    if(startListener(msgbuf) != 0) {
+    if(startListener(msgbuf, msg_size) != 0) {
         printf("udpListener failed to bind");
         return -1;
     }

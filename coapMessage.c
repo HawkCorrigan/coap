@@ -48,7 +48,7 @@ int parseHeader(coap_header_t *header, uint8_t *bitstring) {
     return SUCCESS;
 }
 
-int parse(coap_message_t *message, uint8_t *bitstring, size_t udp_message_len) {
+int parse(coap_message_t *message, uint8_t *bitstring, size_t msg_size) {
     int readpos = 0;
     message->header = malloc(sizeof(coap_header_t));
 
@@ -84,7 +84,7 @@ int parse(coap_message_t *message, uint8_t *bitstring, size_t udp_message_len) {
 
     int optCount = 0;
     uint16_t rollingDelta=0;
-    while (bitstring[readpos] != 0xFF && readpos < udp_message_len) {
+    while (bitstring[readpos] != 0xFF && readpos < msg_size) {
         optCount++;
         message->opts = realloc(message->opts, (size_t) (optCount * sizeof(coap_option_t)));
 
@@ -127,7 +127,7 @@ int parse(coap_message_t *message, uint8_t *bitstring, size_t udp_message_len) {
 
     message->numopts=optCount;
 
-    if (readpos == udp_message_len) {
+    if (readpos == msg_size) {
         message->payload.len = 0;
         return SUCCESS;
     }
@@ -137,9 +137,9 @@ int parse(coap_message_t *message, uint8_t *bitstring, size_t udp_message_len) {
     }
 
     readpos++;
-    int payload_byte_count = udp_message_len - readpos;
+    int payload_byte_count = msg_size - readpos;
 
-    message->payload.len = (size_t) udp_message_len - readpos + 1;
+    message->payload.len = msg_size - readpos + 1;
 
     message->payload.p = malloc((payload_byte_count + 1) * sizeof(uint8_t));
 

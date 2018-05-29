@@ -66,7 +66,7 @@ void memread(char* buf, int count){
 	printf("\n");
 }
 
-void startListener(char* buf)
+int startListener(char* buf, size_t *msg_size)
 {
 	/*
 	 * one of host or port can be NULL, if unknown
@@ -136,6 +136,7 @@ void startListener(char* buf)
 			continue;
 		} else {
 			printf("received %zu bytes of data \n", count);
+			*msg_size=(size_t)count;
 			return 0;
 		}
 

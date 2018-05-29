@@ -31,9 +31,7 @@ void startSender(const char *host, const char *port, const char *package, const 
         exit(1);
     }
 
-    if (sendto(fd,package,*size,0,
-    res->ai_addr,res->ai_addrlen)==-1) {
+    if (sendto(fd,package,*size,0,res->ai_addr,res->ai_addrlen)==-1) {
         exit(1);
     }
-
 }

@@ -1,1 +1,1 @@
-int startListener(char* buf);
+int startListener(char* buf, size_t *msg_size);
