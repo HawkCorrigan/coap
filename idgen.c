@@ -3,7 +3,7 @@
 static uint64_t s[16];
 static int p;
 //initialize state array with time since epoch in nanoseconds
-void initialize()
+void initializeRNG()
 {
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);

@@ -11,13 +11,9 @@ void memread(char* buf, coap_message_t *msg);
 
 int main() 
 {
-    initialize();
+    initializeRNG();
 	char* msgbuf = malloc(512*sizeof(char));
     size_t *msg_size=malloc(sizeof(size_t));
-
-	/*
-	* save the received UDP data into msgbuf
-	*/
 
     if(startListener(msgbuf, msg_size) != 0) {
         printf("udpListener failed to bind");
@@ -30,30 +26,6 @@ int main()
         return -1;
     }
 
-	/*
-	* parse the raw UDP data, and process it
-	*/
-
 	parse(msg, (uint8_t*)msgbuf, *msg_size);
     dumpMessage(msg);
-}
-
-void buildExampleMsg(uint8_t* content, size_t *size)
-{
-
-	coap_message_t *message = malloc(sizeof(coap_message_t));
-
-    message->header=malloc(sizeof(coap_header_t));
-    message->header->vers=1;
-    message->header->type=0;
-    message->header->token_len=0;
-    message->header->code_type=1;
-    message->header->message_id=29546;
-    message->token.p=NULL;
-    message->token.len=0;
-    message->numopts=0;
-    message->payload.len=0;
-    message->payload.p=NULL;
-
-    build(content,size,message);
 }

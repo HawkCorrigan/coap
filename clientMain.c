@@ -42,7 +42,7 @@ void addOption(coap_message_t *msg, char *optnum, char *optvalue) {
 }
 int main(int argc, char const *argv[])
 {
-    initialize();
+    initializeRNG();
     if (argc == 1)
     {
         usage(argv[0]);

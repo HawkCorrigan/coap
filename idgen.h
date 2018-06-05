@@ -1,5 +1,5 @@
 #include <stdio.h>
 #include <stdint.h>
 
-void initialize();
+void initializeRNG();
 uint64_t getRandom();
