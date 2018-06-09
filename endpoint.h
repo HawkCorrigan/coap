@@ -1,3 +1,5 @@
+#include "coapMessage.h"
+
 typedef enum
 {
     COAP_METHOD_GET = 1,
@@ -13,7 +15,7 @@ typedef struct {
 
 typedef struct {
     coap_method_t method;
-    coap_endpoint_function_t function;
+    char *(*outCharBuffer)(coap_message_t inMessage);
     const coap_endpoint_path_t *path;
     const char* ct;
 } coap_endpoint_t;

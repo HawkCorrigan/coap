@@ -29,6 +29,18 @@ typedef struct {
     coap_buffer_t payload;
 } coap_message_t;
 
+typedef struct {
+    coap_message_t *msg;
+    uint64_t recvtime;
+    uint64_t lasttransmission;
+    uint8_t failedattempts;
+} coap_out_msg_storage_t;
+
+typedef struct {
+    coap_out_msg_storage_t *stor;
+    size_t length;
+} coap_coms_buffer_t;
+
 enum {
     MESSAGE_TYPE_REQUEST = 0,
     MESSAGE_TYPE_RESPONSE_SUCCESS = 2,
@@ -48,3 +60,6 @@ int parseHeader(coap_header_t *header, uint8_t *bitstring);
 int parse(coap_message_t *message, uint8_t *bitstring, size_t msg_size);
 int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg);
 int dumpMessage(coap_message_t *msg);
+int handleIncomingMessage(char *msg, size_t length);
+
+extern coap_coms_buffer_t outgoingMessages;

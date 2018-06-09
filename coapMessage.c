@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include "time.h"
 
 #include "coapMessage.h"
 #include "errors.h"
@@ -272,3 +273,27 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
 
     return SUCCESS;
 }
+
+int handleIncomingMessage(char* buf, size_t length){
+    int s = 0;
+    coap_message_t *msg = malloc(sizeof(coap_message_t));
+    s = parse(msg, buf, length);
+    coap_out_msg_storage_t *coms = malloc(sizeof(coap_out_msg_storage_t));
+    coap_message_t *resp = malloc(sizeof(coap_message_t));
+    s = getResponse(msg, resp);
+    time_t now = time(NULL);
+    dumpMessage(resp);
+    coms->failedattempts=0;
+    coms->lasttransmission=now;
+    coms->msg=resp;
+    coms->recvtime=now;
+    outgoingMessages.length++;
+    outgoingMessages.stor=realloc(outgoingMessages.stor,sizeof(coap_out_msg_storage_t)*outgoingMessages.length);
+    outgoingMessages.stor[outgoingMessages.length-1]=*coms;
+
+    for(s=0;s<outgoingMessages.length;s++){
+        dumpMessage(outgoingMessages.stor[s].msg);
+    }
+    return 0;
+}
+    
