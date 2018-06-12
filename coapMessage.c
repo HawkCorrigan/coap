@@ -2,9 +2,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include "time.h"
+#include "endpoint.h"
 
 #include "coapMessage.h"
 #include "errors.h"
+
+extern coap_endpoint_t endpoints[];
 
 int initEmptyMessage(coap_message_t *msg) {
     msg->header = malloc(sizeof(coap_header_t));
@@ -274,26 +277,96 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
     return SUCCESS;
 }
 
-int handleIncomingMessage(char* buf, size_t length){
+int handleIncomingMessage(char* buf, size_t length){ //return index of response in outgoingmessages or -1 on error
     int s = 0;
     coap_message_t *msg = malloc(sizeof(coap_message_t));
     s = parse(msg, buf, length);
-    coap_out_msg_storage_t *coms = malloc(sizeof(coap_out_msg_storage_t));
+    coap_out_msg_storage_t coms;
     coap_message_t *resp = malloc(sizeof(coap_message_t));
-    s = getResponse(msg, resp);
-    time_t now = time(NULL);
-    dumpMessage(resp);
-    coms->failedattempts=0;
-    coms->lasttransmission=now;
-    coms->msg=resp;
-    coms->recvtime=now;
-    outgoingMessages.length++;
-    outgoingMessages.stor=realloc(outgoingMessages.stor,sizeof(coap_out_msg_storage_t)*outgoingMessages.length);
-    outgoingMessages.stor[outgoingMessages.length-1]=*coms;
+    if ((s = getResponse(msg, resp))!=-1){
 
-    for(s=0;s<outgoingMessages.length;s++){
-        dumpMessage(outgoingMessages.stor[s].msg);
+        add_acknowledge(msg->header->message_id);
+        time_t now = time(NULL);
+        coms.failedattempts=0;
+        coms.lasttransmission=0;
+        coms.msg=resp;
+        coms.recvtime=now;
+        int i;
+        if(outgoingMessages.capacity==outgoingMessages.length){
+            outgoingMessages.stor=realloc(outgoingMessages.stor, outgoingMessages.capacity*2);
+            if(outgoingMessages.stor==NULL)
+                return -1;
+            outgoingMessages.capacity*=2;
+        }
+        while ((!(outgoingMessages.stor[i].msg==NULL))&&(i<outgoingMessages.length)){
+            i++;
+        }
+            outgoingMessages.stor[i]=coms;
+        return i;
+     } else {
+         addReset(msg->header->message_id);
+     }
+}
+
+int addReset(uint16_t mid){
+    coap_message_t *rsp;
+    rsp=initEmptyMessage;
+    rsp->header->type=RST;
+    rsp->header->message_id=mid;
+    coap_out_msg_storage_t coms;
+    time_t now = time(NULL);
+    coms.failedattempts=0;
+    coms.lasttransmission=0;
+    coms.msg=rsp;
+    coms.recvtime=now;
+    int i;
+    if (outgoingMessages.capacity==outgoingMessages.length){
+        outgoingMessages.stor = realloc(outgoingMessages.stor, outgoingMessages.capacity*2);
+        if(outgoingMessages.stor==NULL)
+            return -1;
+        outgoingMessages.capacity*=2;
     }
-    return 0;
+    while((!(outgoingMessages.stor[i].msg==NULL))&&(i<outgoingMessages.length)){
+        i++;
+    }
+    outgoingMessages.stor[i]=coms;
+}
+
+int add_acknowledge(uint16_t mid){
+    coap_message_t *rsp;
+    rsp=initEmptyMessage;
+    rsp->header->type=ACK;
+    rsp->header->message_id=mid;
+    coap_out_msg_storage_t coms;
+    time_t now = time(NULL);
+    coms.failedattempts=0;
+    coms.lasttransmission=0;
+    coms.msg=rsp;
+    coms.recvtime=now;
+    int i;
+    if (outgoingMessages.capacity==outgoingMessages.length){
+        outgoingMessages.stor = realloc(outgoingMessages.stor, outgoingMessages.capacity*2);
+        if(outgoingMessages.stor==NULL)
+            return -1;
+        outgoingMessages.capacity*=2;
+    }
+    while((!(outgoingMessages.stor[i].msg==NULL))&&(i<outgoingMessages.length)){
+        i++;
+    }
+    outgoingMessages.stor[i]=coms;
 }
     
+int getResponse(const coap_message_t *in, coap_message_t *out){
+    int i=0;
+    const coap_endpoint_t *ep = endpoints;
+    while(NULL != endpoints->coap_endpoint_function){
+        return endpoints->coap_endpoint_function(in, out->header->message_id, out->payload.p, out->payload.len, out->header->code_status, out->header->code);
+    }
+    build_response(out, NULL, 0, in->header->message_id, in->token, COAP_RESPONSE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
+    return 0;
+}
+
+int delayMessage(int i){
+    outgoingMessages.stor[i].lasttransmission=now();
+    outgoingMessages.stor[i].failedattempts++;
+}

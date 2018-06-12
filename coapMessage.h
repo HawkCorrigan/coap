@@ -29,16 +29,17 @@ typedef struct {
     coap_buffer_t payload;
 } coap_message_t;
 
-typedef struct {
+typedef struct coap_out_msg_storage_t{
     coap_message_t *msg;
     uint64_t recvtime;
     uint64_t lasttransmission;
     uint8_t failedattempts;
 } coap_out_msg_storage_t;
 
-typedef struct {
+typedef struct coap_coms_buffer_t {
     coap_out_msg_storage_t *stor;
     size_t length;
+    size_t capacity;
 } coap_coms_buffer_t;
 
 enum {

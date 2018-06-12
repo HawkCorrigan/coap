@@ -78,7 +78,7 @@ int main (int argc, char *argv[]) {
     struct epoll_event event;
     struct epoll_event *events;
 
-    outgoingMessages.len=0;
+    outgoingMessages.length=0;
 
     sfd = create_and_bind (COAP_PORT);
     if (sfd == ERROR){
@@ -137,8 +137,17 @@ int main (int argc, char *argv[]) {
                 }
             }
         }
-        for(i=0;i<outgoingMessages.len;i++){
-            dumpMessage((outgoingMessages.p[i]));
+        for(i=0;i<outgoingMessages.length;i++){
+            dumpMessage((outgoingMessages.stor[i].msg));
+        }
+        coap_message_t *outMsg;
+        int index;
+        if ((index=getNextMessage(outMsg))!=-1){
+            char buf[512];
+            build(buf, 512, outMsg);
+            struct sockaddr_storage peer_addr;
+            socklen_t peer_addr_len = sizeof(peer_addr);
+            sendto(events[i].data.fd, buf, sizeof buf, 0, (struct sockaddr *) &peer_addr, &peer_addr_len);
         }
     }
 
