@@ -1,3 +1,4 @@
+#pragma once
 #include <stdio.h>
 #include <stdint.h>
 #include <malloc.h>
@@ -51,9 +52,16 @@ enum {
 
 enum {
     REQUEST_TYPE_GET = 1,
-    REQUEST_TYPE_POST,
-    REQUEST_TYPE_PUT,
-    REQUEST_TYPE_DELETE
+    REQUEST_TYPE_POST = 2,
+    REQUEST_TYPE_PUT = 3,
+    REQUEST_TYPE_DELETE = 4,
+};
+
+enum {
+    NON = 1,
+    CON = 2,
+    ACK = 3,
+    RST = 4,
 };
 
 int initEmptyMessage(coap_message_t *);
@@ -62,5 +70,9 @@ int parse(coap_message_t *message, uint8_t *bitstring, size_t msg_size);
 int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg);
 int dumpMessage(coap_message_t *msg);
 int handleIncomingMessage(char *msg, size_t length);
+int addReset(uint16_t mid);
+int add_acknowledge(uint16_t mid);
+int getResponse(const coap_message_t *in, coap_message_t *out);
+int addToOutgoing(coap_out_msg_storage_t coms);
 
-extern coap_coms_buffer_t outgoingMessages;
+coap_coms_buffer_t outgoingMessages;

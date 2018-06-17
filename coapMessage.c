@@ -8,6 +8,7 @@
 #include "errors.h"
 
 extern coap_endpoint_t endpoints[];
+extern coap_coms_buffer_t outgoingMessages;
 
 int initEmptyMessage(coap_message_t *msg) {
     msg->header = malloc(sizeof(coap_header_t));
@@ -32,20 +33,20 @@ int initEmptyMessage(coap_message_t *msg) {
 
 int parseHeader(coap_header_t *header, uint8_t *bitstring) {
 
-    header->vers = ((bitstring[0] & 0b11000000)>>6);
+    header->vers = ((bitstring[0] & 0xC0)>>6);
 
     if (header->vers!=1)
         return ERROR_WRONG_VERSION; //Ignore Message
 
-    header->type = ((bitstring[0] & 0b00110000) >> 4);
-    header->token_len = ((bitstring[0] & 0b00001111));
+    header->type = ((bitstring[0] & 0x30) >> 4);
+    header->token_len = ((bitstring[0] & 0x0F));
 
     if (header->token_len > 8) {
         return ERROR_MESSAGE_FORMAT;
     }
 
-    header->code_type = ((bitstring[1] & 0b11100000) >> 5);
-    header->code_status = ((bitstring[1] & 0b00011111));
+    header->code_type = ((bitstring[1] & 0xE0) >> 5);
+    header->code_status = ((bitstring[1] & 0x1F));
 
     header->message_id = ((bitstring[2] << 8) | bitstring[3]);
 
@@ -277,10 +278,10 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
     return SUCCESS;
 }
 
-int handleIncomingMessage(char* buf, size_t length){ //return index of response in outgoingmessages or -1 on error
+int handleIncomingMessage(char* buf, size_t length){          //return index of response in outgoingmessages or -1 on error
     int s = 0;
     coap_message_t *msg = malloc(sizeof(coap_message_t));
-    s = parse(msg, buf, length);
+    s = parse(msg, (uint8_t *)buf, length);
     coap_out_msg_storage_t coms;
     coap_message_t *resp = malloc(sizeof(coap_message_t));
     if ((s = getResponse(msg, resp))!=-1){
@@ -291,26 +292,35 @@ int handleIncomingMessage(char* buf, size_t length){ //return index of response 
         coms.lasttransmission=0;
         coms.msg=resp;
         coms.recvtime=now;
-        int i;
-        if(outgoingMessages.capacity==outgoingMessages.length){
-            outgoingMessages.stor=realloc(outgoingMessages.stor, outgoingMessages.capacity*2);
-            if(outgoingMessages.stor==NULL)
-                return -1;
-            outgoingMessages.capacity*=2;
-        }
-        while ((!(outgoingMessages.stor[i].msg==NULL))&&(i<outgoingMessages.length)){
-            i++;
-        }
-            outgoingMessages.stor[i]=coms;
-        return i;
+        return addToOutgoing(coms);
      } else {
          addReset(msg->header->message_id);
      }
+     return SUCCESS;
+}
+
+int addToOutgoing(coap_out_msg_storage_t coms){
+    int i=0;
+    if (outgoingMessages.capacity==outgoingMessages.length){
+        size_t newsize = outgoingMessages.capacity*2;
+        printf("%d\n",newsize);
+        outgoingMessages.stor=realloc(outgoingMessages.stor, newsize*sizeof(coap_out_msg_storage_t));
+        if(outgoingMessages.stor==NULL){
+            return -1;
+        }
+        outgoingMessages.capacity*=2;
+    }
+    while((!(outgoingMessages.stor[i].msg==NULL)) && (i<outgoingMessages.length)){
+        i++;
+    }
+    outgoingMessages.stor[i]=coms;
+    outgoingMessages.length++;
+    return i;
 }
 
 int addReset(uint16_t mid){
-    coap_message_t *rsp;
-    rsp=initEmptyMessage;
+    coap_message_t *rsp = malloc(sizeof(coap_message_t));
+    initEmptyMessage(rsp);
     rsp->header->type=RST;
     rsp->header->message_id=mid;
     coap_out_msg_storage_t coms;
@@ -319,22 +329,12 @@ int addReset(uint16_t mid){
     coms.lasttransmission=0;
     coms.msg=rsp;
     coms.recvtime=now;
-    int i;
-    if (outgoingMessages.capacity==outgoingMessages.length){
-        outgoingMessages.stor = realloc(outgoingMessages.stor, outgoingMessages.capacity*2);
-        if(outgoingMessages.stor==NULL)
-            return -1;
-        outgoingMessages.capacity*=2;
-    }
-    while((!(outgoingMessages.stor[i].msg==NULL))&&(i<outgoingMessages.length)){
-        i++;
-    }
-    outgoingMessages.stor[i]=coms;
+    return addToOutgoing(coms);
 }
 
 int add_acknowledge(uint16_t mid){
-    coap_message_t *rsp;
-    rsp=initEmptyMessage;
+    coap_message_t *rsp = malloc(sizeof(coap_message_t));
+    initEmptyMessage(rsp);
     rsp->header->type=ACK;
     rsp->header->message_id=mid;
     coap_out_msg_storage_t coms;
@@ -343,30 +343,21 @@ int add_acknowledge(uint16_t mid){
     coms.lasttransmission=0;
     coms.msg=rsp;
     coms.recvtime=now;
-    int i;
-    if (outgoingMessages.capacity==outgoingMessages.length){
-        outgoingMessages.stor = realloc(outgoingMessages.stor, outgoingMessages.capacity*2);
-        if(outgoingMessages.stor==NULL)
-            return -1;
-        outgoingMessages.capacity*=2;
-    }
-    while((!(outgoingMessages.stor[i].msg==NULL))&&(i<outgoingMessages.length)){
-        i++;
-    }
-    outgoingMessages.stor[i]=coms;
+    return addToOutgoing(coms);
 }
-    
+
 int getResponse(const coap_message_t *in, coap_message_t *out){
-    int i=0;
-    const coap_endpoint_t *ep = endpoints;
+    //int i=0;
+/*    const coap_endpoint_t *ep = endpoints;
     while(NULL != endpoints->coap_endpoint_function){
         return endpoints->coap_endpoint_function(in, out->header->message_id, out->payload.p, out->payload.len, out->header->code_status, out->header->code);
-    }
-    build_response(out, NULL, 0, in->header->message_id, in->token, COAP_RESPONSE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
-    return 0;
+    }*/
+    return initEmptyMessage(out);
 }
 
 int delayMessage(int i){
-    outgoingMessages.stor[i].lasttransmission=now();
+    time_t now = time(NULL);
+    outgoingMessages.stor[i].lasttransmission=now;
     outgoingMessages.stor[i].failedattempts++;
+    return SUCCESS;
 }

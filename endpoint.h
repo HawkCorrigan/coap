@@ -1,3 +1,4 @@
+#pragma once
 #include "coapMessage.h"
 
 typedef enum
@@ -59,28 +60,8 @@ typedef struct {
     const char* ct;
 } coap_endpoint_t;
 
-const uint16_t wk_core_length = 1500;
-static char wk_core[wk_core_length] = "";
+#define WK_CORE_LENGTH 1500 
+static char wk_core[WK_CORE_LENGTH];
 void generate_wk_core();
 
-coap_endpoint_t endpoints[];
-
-void generate_wk_core(){
-    int i=0;
-    const coap_endpoint_t *ep = endpoints;
-    while (endpoints->coap_endpoint_function!=NULL){
-            if (strlen(wk_core)>0){}
-                strncat(wk_core, ",",1);
-            }
-            strncat(wk_core, "<",1);
-
-            for (i=0;i<ep->path->length;i++){
-                strncat(wk_core,"/",1);
-                strncat(wk_core,ep->path->dest[i],wk_core_length);
-            }
-
-            strncat(wk_core, ">;", 2);
-            strncat(wk_core, ep->ct,wk_core_length);
-            ep++;
-    }
-}
+coap_endpoint_t endpoints[150];

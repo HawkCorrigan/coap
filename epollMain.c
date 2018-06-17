@@ -77,8 +77,10 @@ int main (int argc, char *argv[]) {
     int efd;
     struct epoll_event event;
     struct epoll_event *events;
-
-    outgoingMessages.length=0;
+    outgoingMessages.stor = malloc(sizeof(coap_out_msg_storage_t));
+    outgoingMessages.length = 0;
+    outgoingMessages.capacity=1;
+    outgoingMessages.stor[0].msg=NULL;
 
     sfd = create_and_bind (COAP_PORT);
     if (sfd == ERROR){
@@ -129,7 +131,8 @@ int main (int argc, char *argv[]) {
                     } else if (count == 0){
                         break;
                     }
-                    handleIncomingMessage(buf,(uint8_t)count);
+                    printf("RECEIVED\n");
+                    handleIncomingMessage(buf,(size_t)count);
                     if (s == -1) {
                         perror ("write");
                         abort ();
@@ -137,10 +140,11 @@ int main (int argc, char *argv[]) {
                 }
             }
         }
+        printf("TEST\n");
         for(i=0;i<outgoingMessages.length;i++){
             dumpMessage((outgoingMessages.stor[i].msg));
         }
-        coap_message_t *outMsg;
+        /*coap_message_t *outMsg;
         int index;
         if ((index=getNextMessage(outMsg))!=-1){
             char buf[512];
@@ -148,7 +152,7 @@ int main (int argc, char *argv[]) {
             struct sockaddr_storage peer_addr;
             socklen_t peer_addr_len = sizeof(peer_addr);
             sendto(events[i].data.fd, buf, sizeof buf, 0, (struct sockaddr *) &peer_addr, &peer_addr_len);
-        }
+        }*/
     }
 
     free (events);
