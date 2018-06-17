@@ -28,8 +28,9 @@ int initEmptyMessage(coap_message_t *msg) {
     msg->payload.len = 0;
     msg->payload.p = NULL;
     
-    return 0;
+    return SUCCESS;
 }
+
 
 int parseHeader(coap_header_t *header, uint8_t *bitstring) {
 
@@ -279,14 +280,12 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
 }
 
 int handleIncomingMessage(char* buf, size_t length){          //return index of response in outgoingmessages or -1 on error
-    int s = 0;
+    int s;
     coap_message_t *msg = malloc(sizeof(coap_message_t));
     s = parse(msg, (uint8_t *)buf, length);
     coap_out_msg_storage_t coms;
     coap_message_t *resp = malloc(sizeof(coap_message_t));
     if ((s = getResponse(msg, resp))!=-1){
-
-        add_acknowledge(msg->header->message_id);
         time_t now = time(NULL);
         coms.failedattempts=0;
         coms.lasttransmission=0;
@@ -303,19 +302,18 @@ int addToOutgoing(coap_out_msg_storage_t coms){
     int i=0;
     if (outgoingMessages.capacity==outgoingMessages.length){
         size_t newsize = outgoingMessages.capacity*2;
-        printf("%d\n",newsize);
         outgoingMessages.stor=realloc(outgoingMessages.stor, newsize*sizeof(coap_out_msg_storage_t));
         if(outgoingMessages.stor==NULL){
             return -1;
         }
         outgoingMessages.capacity*=2;
     }
-    while((!(outgoingMessages.stor[i].msg==NULL)) && (i<outgoingMessages.length)){
+    while((!(outgoingMessages.stor[i].msg==NULL)) && (i<outgoingMessages.length)){ //skip occupied fields
         i++;
     }
-    outgoingMessages.stor[i]=coms;
+    outgoingMessages.stor[i]=coms;  //store new message in array
     outgoingMessages.length++;
-    return i;
+    return i;                       //return index of message in array (might be bigger then length)
 }
 
 int addReset(uint16_t mid){
@@ -346,13 +344,86 @@ int add_acknowledge(uint16_t mid){
     return addToOutgoing(coms);
 }
 
+int getNextMessage(coap_message_t *out){
+    int i;
+    for(i=0;i<outgoingMessages.capacity;i++){
+        if((out=outgoingMessages.stor[i].msg)!=NULL){
+            break;
+        }
+    }
+    return -1;
+}
+
 int getResponse(const coap_message_t *in, coap_message_t *out){
-    //int i=0;
-/*    const coap_endpoint_t *ep = endpoints;
+    int i=0;
+    const coap_endpoint_t *ep = endpoints;
+    uint8_t count;
+    const coap_option_t *opt;
     while(NULL != endpoints->coap_endpoint_function){
-        return endpoints->coap_endpoint_function(in, out->header->message_id, out->payload.p, out->payload.len, out->header->code_status, out->header->code);
-    }*/
-    return initEmptyMessage(out);
+        if (NULL != (opt = getOption(in, 11, &count))){
+            if(count!=ep->path->length){
+                goto next;
+            }
+            for(i=0;i<count;i++){
+                if(opt[i].value.len!=strlen(ep->path->dest[i])){
+                    goto next;
+                }
+                if(0!=memcmp(ep->path->dest[i], opt[i].value.p, opt[i].value.len)){
+                    goto next;
+                }
+
+                if(ep->method==(in->header->code_type<<5 | in->header->code_status)){
+                    return ep->coap_endpoint_function(in, out);
+                }
+                else{
+                    // return 405
+                }
+            }
+
+        }
+next:
+        ep++;
+    }
+    return makeResponse(out, NULL, 0, in->header->message_id, &in->token,4,4);
+}
+
+const coap_option_t *getOption(const coap_message_t *msg, uint8_t num, uint8_t *count){
+    int i;
+    for (i=0; i<msg->numopts; i++){
+        if (msg->opts[i].number==num){
+            (*count)++;
+            while(msg->opts[i+(*count)].number==num){
+                (*count)++;
+            }
+        }
+        return &(msg->opts[i]);
+    }
+    return NULL;
+}
+
+int makeResponse(coap_message_t *msg, const uint8_t *content, size_t content_length, uint16_t mid,const coap_buffer_t *tok, uint8_t c_stat, uint8_t c_type){
+    msg->header->vers=0x01;
+    msg->header->type=ACK;
+    msg->header->token_len=0;
+    msg->header->code_status=c_stat;
+    msg->header->code_type=c_type;
+    msg->header->message_id=mid;
+
+    if(tok){
+        msg->header->token_len=tok->len;
+        msg->token= *tok;
+    }
+
+    msg->numopts=1;
+    msg->opts=malloc(sizeof(coap_buffer_t));
+    msg->opts[0].number=12;
+    msg->opts[0].value.len=1;
+    uint8_t val = 0;
+    msg->opts[0].value.p=&val;
+
+    msg->payload.len=content_length;
+    msg->payload.p=content;
+    return SUCCESS;
 }
 
 int delayMessage(int i){

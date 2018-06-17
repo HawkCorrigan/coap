@@ -55,7 +55,7 @@ typedef struct {
 
 typedef struct {
     coap_method_t method;
-    int (*coap_endpoint_function)(const coap_message_t *inmsg, uint16_t mid, char *content, size_t content_length, uint8_t code);
+    int (*coap_endpoint_function)(const coap_message_t *inmsg, coap_message_t *outmsg);
     const coap_endpoint_path_t *path;
     const char* ct;
 } coap_endpoint_t;

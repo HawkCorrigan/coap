@@ -131,7 +131,6 @@ int main (int argc, char *argv[]) {
                     } else if (count == 0){
                         break;
                     }
-                    printf("RECEIVED\n");
                     handleIncomingMessage(buf,(size_t)count);
                     if (s == -1) {
                         perror ("write");
@@ -144,15 +143,19 @@ int main (int argc, char *argv[]) {
         for(i=0;i<outgoingMessages.length;i++){
             dumpMessage((outgoingMessages.stor[i].msg));
         }
-        /*coap_message_t *outMsg;
+        coap_message_t *outMsg;
         int index;
         if ((index=getNextMessage(outMsg))!=-1){
+            ssize_t count;
             char buf[512];
             build(buf, 512, outMsg);
             struct sockaddr_storage peer_addr;
             socklen_t peer_addr_len = sizeof(peer_addr);
-            sendto(events[i].data.fd, buf, sizeof buf, 0, (struct sockaddr *) &peer_addr, &peer_addr_len);
-        }*/
+            count = sendto(events[i].data.fd, buf, sizeof buf, 0, (struct sockaddr *) &peer_addr, &peer_addr_len);
+            if (count == -1){
+                return -1;
+            }
+        }
     }
 
     free (events);
