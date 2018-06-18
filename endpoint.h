@@ -64,4 +64,4 @@ typedef struct {
 static char wk_core[WK_CORE_LENGTH];
 void generate_wk_core();
 
-coap_endpoint_t endpoints[150];
+extern coap_endpoint_t endpoints[150];

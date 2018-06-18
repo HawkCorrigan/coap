@@ -76,5 +76,6 @@ int getResponse(const coap_message_t *in, coap_message_t *out);
 int addToOutgoing(coap_out_msg_storage_t coms);
 int makeResponse(coap_message_t *msg, const uint8_t *content, size_t content_length, uint16_t mid,const coap_buffer_t *tok, uint8_t c_stat, uint8_t c_type);
 const coap_option_t *getOption(const coap_message_t *msg, uint8_t num, uint8_t *count);
+int getNextMessage(coap_message_t *out);
 
-coap_coms_buffer_t outgoingMessages;
+extern coap_coms_buffer_t outgoingMessages;

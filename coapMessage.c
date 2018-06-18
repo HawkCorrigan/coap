@@ -7,8 +7,8 @@
 #include "coapMessage.h"
 #include "errors.h"
 
-extern coap_endpoint_t endpoints[];
-extern coap_coms_buffer_t outgoingMessages;
+coap_endpoint_t endpoints[];
+coap_coms_buffer_t outgoingMessages;
 
 int initEmptyMessage(coap_message_t *msg) {
     msg->header = malloc(sizeof(coap_header_t));
@@ -194,20 +194,20 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
     buf[1] |= msg->header->code_status;
     buf[2] = msg->header->message_id >> 8;
     buf[3] = msg->header->message_id;
-
+ 
     *buflen = 4;
     uint8_t *p = buf + 4;
-
+ 
     if (msg->header->token_len > 0){
         *buflen += msg->header->token_len;
         buf = realloc(buf, ((uint8_t) *buflen) * sizeof(uint8_t));
         if (buf == NULL)
             return ERROR_MALLOC_MESSAGE_TOKEN;
         memcpy(p, msg->token.p, msg->header->token_len);
+        p += msg->header->token_len;
     }
-
-    p += msg->header->token_len;
-
+ 
+ 
     uint8_t runningDelta = 0;
     for(int  i = 0; i < msg->numopts; i++)
     {
@@ -215,17 +215,17 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
         uint8_t length, delta;
         
         if (optDelta < 13){
-            delta= 0xFF & optDelta;
+            delta = 0xFF & optDelta;
         }
         else if (optDelta <= 13+0xFF){
-            delta= 13;
+            delta = 13;
         }
         else if (optDelta <= 269+0xFFFF){
             delta = 14;
         }
         
         (*buflen)++;
-
+ 
         int optLength = msg->opts[i].value.len;
         if (optLength < 13){
             length= 0xFF & optLength;
@@ -236,50 +236,58 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
         else if (optLength <= 269+0xFFFF){
             length = 14;
         }
-        *p++ = delta<<4 | length;
-        if(delta==13){
+ 
+        *p++ = (delta << 4 | length);
+        if(delta == 13){
             *p++=optDelta-13;
             (*buflen)++;
         }
+ 
         if(delta==14){
             *p++ = (optDelta - 269) >> 8;
             *p++ = (0xFF & (optDelta - 269));
             (*buflen) += 2;
         }
-
+ 
+ 
+ 
         if(length==13){
-            *p++ = msg->opts[i].value.len -13;
+            *p++ = optLength -13;
             (*buflen)++;
         }
+ 
         if(length==14){
-            *p++ = (msg->opts[i].value.len-269)>>8;
-            *p++ = (0xFF & (msg->opts[i].value.len-269));
+            *p++ = (optLength-269)>>8;
+            *p++ = (0xFF & (optLength-269));
             (*buflen) += 2;
         }
-
-        buf = realloc(buf, ((uint8_t) *buflen) * sizeof(uint8_t));
+ 
+        *buflen += optLength; 
+ 
+        buf = realloc(buf, ((size_t) *buflen) * sizeof(uint8_t));
         if (buf == NULL)
             return ERROR_MALLOC_MESSAGE_TOKEN;
-
-        memcpy(p, msg->opts[i].value.p, msg->opts[i].value.len);
-        p += msg->opts[i].value.len;
+ 
+        memcpy(p, msg->opts[i].value.p, optLength);
+        p += optLength;
         runningDelta = msg->opts[i].number;
     }
-
+ 
     if (msg->payload.len > 0){
         *buflen += 1 + msg->payload.len;
         buf = realloc(buf, ((uint8_t) *buflen) * sizeof(uint8_t));
         if (buf == NULL)
             return ERROR_MALLOC_MESSAGE_TOKEN;
-
+ 
         *p++=0xFF;
         memcpy(p, msg->payload.p, msg->payload.len);
     }
-
+ 
     return SUCCESS;
 }
 
 int handleIncomingMessage(char* buf, size_t length){          //return index of response in outgoingmessages or -1 on error
+    printf("HANDLEINCOMING\n");
     int s;
     coap_message_t *msg = malloc(sizeof(coap_message_t));
     s = parse(msg, (uint8_t *)buf, length);
@@ -299,6 +307,7 @@ int handleIncomingMessage(char* buf, size_t length){          //return index of 
 }
 
 int addToOutgoing(coap_out_msg_storage_t coms){
+    printf("ADDTOOUTGOING\n");
     int i=0;
     if (outgoingMessages.capacity==outgoingMessages.length){
         size_t newsize = outgoingMessages.capacity*2;
@@ -345,20 +354,26 @@ int add_acknowledge(uint16_t mid){
 }
 
 int getNextMessage(coap_message_t *out){
+    printf("GETNEXTMESSAGE\n");
     int i;
     for(i=0;i<outgoingMessages.capacity;i++){
-        if((out=outgoingMessages.stor[i].msg)!=NULL){
-            break;
+        if(outgoingMessages.stor[i].msg!=NULL){
+            memcpy(out, outgoingMessages.stor[i].msg, sizeof(coap_message_t));
+            printf("FOUND MESSAGE\n");
+            dumpMessage(out);
+            return i;
         }
     }
     return -1;
 }
 
 int getResponse(const coap_message_t *in, coap_message_t *out){
+    printf("GETRESPONSE\n");
     int i=0;
     const coap_endpoint_t *ep = endpoints;
     uint8_t count;
     const coap_option_t *opt;
+    char foundPath=0;
     while(NULL != endpoints->coap_endpoint_function){
         if (NULL != (opt = getOption(in, 11, &count))){
             if(count!=ep->path->length){
@@ -371,15 +386,15 @@ int getResponse(const coap_message_t *in, coap_message_t *out){
                 if(0!=memcmp(ep->path->dest[i], opt[i].value.p, opt[i].value.len)){
                     goto next;
                 }
-
+                foundPath=1;
                 if(ep->method==(in->header->code_type<<5 | in->header->code_status)){
                     return ep->coap_endpoint_function(in, out);
                 }
-                else{
-                    // return 405
-                }
-            }
 
+            }
+        }
+        if(foundPath){
+            //return 405
         }
 next:
         ep++;
@@ -402,18 +417,17 @@ const coap_option_t *getOption(const coap_message_t *msg, uint8_t num, uint8_t *
 }
 
 int makeResponse(coap_message_t *msg, const uint8_t *content, size_t content_length, uint16_t mid,const coap_buffer_t *tok, uint8_t c_stat, uint8_t c_type){
+    msg->header=malloc(sizeof(coap_header_t));
     msg->header->vers=0x01;
     msg->header->type=ACK;
     msg->header->token_len=0;
     msg->header->code_status=c_stat;
     msg->header->code_type=c_type;
     msg->header->message_id=mid;
-
     if(tok){
         msg->header->token_len=tok->len;
         msg->token= *tok;
     }
-
     msg->numopts=1;
     msg->opts=malloc(sizeof(coap_buffer_t));
     msg->opts[0].number=12;
@@ -422,7 +436,7 @@ int makeResponse(coap_message_t *msg, const uint8_t *content, size_t content_len
     msg->opts[0].value.p=&val;
 
     msg->payload.len=content_length;
-    msg->payload.p=content;
+    msg->payload.p=(uint8_t *)content;
     return SUCCESS;
 }
 

@@ -1,21 +1,23 @@
 #include "endpoint.h"
+#include <string.h>
 
 void generate_wk_core(){
     int i=0;
+    coap_endpoint_t endpoints[150];
     const coap_endpoint_t *ep = endpoints;
     while (endpoints->coap_endpoint_function!=NULL){
             if (strlen(wk_core)>0){
-                strncat(wk_core, ",",1);
+                strcat(wk_core, ",");
             }
-            strncat(wk_core, "<",1);
+            strcat(wk_core, "<");
 
             for (i=0;i<ep->path->length;i++){
-                strncat(wk_core,"/",1);
-                strncat(wk_core,ep->path->dest[i],WK_CORE_LENGTH);
+                strcat(wk_core,"/");
+                strcat(wk_core,ep->path->dest[i]);
             }
 
-            strncat(wk_core, ">;", 2);
-            strncat(wk_core, ep->ct,WK_CORE_LENGTH);
+            strcat(wk_core, ">;");
+            strcat(wk_core, ep->ct);
             ep++;
     }
 }
