@@ -167,9 +167,10 @@ int main (int argc, char *argv[]) {
             printf("TRYING TO SEND %zu Bytes: %s\n", *msg_size, buf);
             struct sockaddr_storage peer_addr;
             socklen_t peer_addr_len = sizeof(peer_addr);
-            count = sendto(events[i].data.fd, buf, 6, 0, (struct sockaddr *) &peer_addr, peer_addr_len);
-            printf("%zd\n", count);
+            count = sendto(events[0].data.fd, buf, *msg_size, 0, (struct sockaddr *) &peer_addr, peer_addr_len);
+            deleteFromOutgoing(index);
             if (count == -1){
+                printf("%d\n", errno);
                 return -1;
             }
         }

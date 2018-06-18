@@ -353,6 +353,29 @@ int add_acknowledge(uint16_t mid){
     return addToOutgoing(coms);
 }
 
+int deleteFromOutgoing(size_t index){
+    if(index>=outgoingMessages.capacity){
+        return -1;
+    }
+    if(outgoingMessages.stor[index].msg==NULL){
+        return -1;
+    }
+    outgoingMessages.stor[index].msg=NULL;
+    outgoingMessages.length--;
+    return SUCCESS;
+}
+
+int deleteFromOutgoingByMid(uint16_t mid){
+    size_t i;
+    for (i=0;i<outgoingMessages.capacity;i++){
+        if(outgoingMessages.stor[i].msg->header->message_id==mid){
+            outgoingMessages.stor[i].msg=NULL;
+            return i;
+        }
+    }
+    return -1;
+}
+
 int getNextMessage(coap_message_t *out){
     printf("GETNEXTMESSAGE\n");
     int i;
