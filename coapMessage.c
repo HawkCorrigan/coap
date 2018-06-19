@@ -294,24 +294,39 @@ int handleIncomingMessage(char* buf, size_t length){          //return index of 
     if ((s = parse(msg, (uint8_t *)buf, length))==-1){
         addReset(msg->header->message_id);
     }
-    if(msg->header->type==CON){
-        handleIncomingConfirmableMessage(msg, length);
+    if((msg->header->type==CON) || (msg->header->type==NON)){
+        coap_out_msg_storage_t coms;
+        coap_message_t *resp = malloc(sizeof(coap_message_t));
+        if ((s = getResponse(msg, resp))!=-1){
+        time_t now = time(NULL);
+        coms.failedattempts=0;
+        coms.nexttransmission=now;
+        coms.msg=resp;
+        coms.recvtime=now;
+        return addToOutgoing(coms);
+        }
     }
-    if(msg->header->type==ACK){
-        deleteFromOutgoingByMid(msg->header->message_id);
-    }
-    if(msg->header->type==RST){
+    if(msg->header->type == ACK || msg->header->type == RST){
         deleteFromOutgoingByMid(msg->header->message_id);
     }
     return 0;
 }
 
 int handleIncomingConfirmableMessage(coap_message_t *msg, size_t length){
+    
     int s;
+    if((s=getDuplicateByMid(msg->header->message_id))!=-1){
+        coap_out_msg_storage_t coms;
+        time_t now=time(NULL);
+        coms.failedattempts=0;
+        coms.nexttransmission=now;
+        coms.msg=recentMids.stor[s].msg;
+        coms.recvtime=now;
+        return addToOutgoing(coms);
+    }
     coap_out_msg_storage_t coms;
     coap_message_t *resp = malloc(sizeof(coap_message_t));
     if ((s = getResponse(msg, resp))!=-1){
-        dumpMessage(resp);
         time_t now = time(NULL);
         coms.failedattempts=0;
         coms.nexttransmission=now;
@@ -396,6 +411,7 @@ int getNextMessage(coap_message_t *out){
     time_t now = time(NULL);
     for(i=0;i<outgoingMessages.capacity;i++){
         if((outgoingMessages.stor[i].msg!=NULL)&&(outgoingMessages.stor[i].nexttransmission<=now)){
+            
             memcpy(out, outgoingMessages.stor[i].msg, sizeof(coap_message_t));
             if(out->header->type==CON || out->header->type==RST)
                 delayMessage(i);
@@ -441,8 +457,6 @@ next:
 }
 
 const coap_option_t *getOption(const coap_message_t *msg, uint16_t num, uint8_t *count){
-
-    dumpMessage(msg);
     int i;
     for (i=0; i<msg->numopts; i++){
         if (msg->opts[i].number==num){
@@ -525,13 +539,13 @@ int addToRecentMids(uint16_t mid, coap_message_t *msg){
     return i;                       //return index of message in array (might be bigger then length)
 }
 
-char isDuplicateByMid(uint16_t mid){
+int getDuplicateByMid(uint16_t mid){
     int i=0;
     time_t now = time(NULL);
-    for (i=0; i<recentMids.length;i++){
+    for (i=0; i<recentMids.capacity;i++){
         if((recentMids.stor[i].mid==mid) && recentMids.stor[i].lastused>=(now+247*CLOCKS_PER_SEC)){
-            return 1;
+            return i;
         }
     }
-    return 0;
+    return -1;
 }

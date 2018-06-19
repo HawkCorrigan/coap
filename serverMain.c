@@ -27,5 +27,4 @@ int main()
     }
 
 	parse(msg, (uint8_t*)msgbuf, *msg_size);
-    dumpMessage(msg);
 }

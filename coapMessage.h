@@ -95,6 +95,7 @@ int getNextMessage(coap_message_t *out);
 int deleteFromOutgoing(size_t index);
 int deleteFromOutgoingByMid(uint16_t mid);
 int delayMessage(int i);
+int getDuplicateByMid(uint16_t mid);
 
 extern coap_coms_buffer_t outgoingMessages;
 extern coap_concurrent_mid_buffer_t recentMids;

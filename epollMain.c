@@ -154,7 +154,6 @@ int main (int argc, char *argv[]) {
             ssize_t count;
             size_t *msg_size = malloc (sizeof(size_t));
             uint8_t *buf=malloc(sizeof(uint8_t));
-            dumpMessage(outMsg);
             build(buf, msg_size, outMsg);
             struct sockaddr_storage peer_addr;
             socklen_t peer_addr_len = sizeof(peer_addr);
