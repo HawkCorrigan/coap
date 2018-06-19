@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <malloc.h>
+#include <time.h>
 
 typedef struct {
     uint8_t vers;
@@ -32,8 +33,8 @@ typedef struct {
 
 typedef struct coap_out_msg_storage_t{
     coap_message_t *msg;
-    uint64_t recvtime;
-    uint64_t lasttransmission;
+    time_t recvtime;
+    time_t nexttransmission;
     uint8_t failedattempts;
 } coap_out_msg_storage_t;
 
@@ -42,6 +43,18 @@ typedef struct coap_coms_buffer_t {
     size_t length;
     size_t capacity;
 } coap_coms_buffer_t;
+
+typedef struct coap_recent_mid_t {
+    uint16_t mid;
+    time_t lastused;
+    coap_message_t *msg;
+} coap_recent_mid_t;
+
+typedef struct coap_concurrent_mid_buffer_t {
+    coap_recent_mid_t *stor;
+    size_t length;
+    size_t capacity;
+} coap_concurrent_mid_buffer_t;
 
 enum {
     MESSAGE_TYPE_REQUEST = 0,
@@ -58,10 +71,10 @@ enum {
 };
 
 enum {
+    CON = 0,
     NON = 1,
-    CON = 2,
-    ACK = 3,
-    RST = 4,
+    ACK = 2,
+    RST = 3,
 };
 
 int initEmptyMessage(coap_message_t *);
@@ -69,15 +82,19 @@ int parseHeader(coap_header_t *header, uint8_t *bitstring);
 int parse(coap_message_t *message, uint8_t *bitstring, size_t msg_size);
 int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg);
 int dumpMessage(coap_message_t *msg);
-int handleIncomingMessage(char *msg, size_t length);
+int handleIncomingMessage(char *buf, size_t length);
+int handleIncomingConfirmableMessage(coap_message_t *msg, size_t length);
 int addReset(uint16_t mid);
 int add_acknowledge(uint16_t mid);
 int getResponse(const coap_message_t *in, coap_message_t *out);
 int addToOutgoing(coap_out_msg_storage_t coms);
-int makeResponse(coap_message_t *msg, const uint8_t *content, size_t content_length, uint16_t mid,const coap_buffer_t *tok, uint8_t c_stat, uint8_t c_type);
-const coap_option_t *getOption(const coap_message_t *msg, uint8_t num, uint8_t *count);
+int addToRecentMids(uint16_t mid, coap_message_t *msg);
+int makeResponse(coap_message_t *msg, const uint8_t *content, size_t content_length, uint16_t mid,const coap_buffer_t *tok, uint8_t c_type, uint8_t c_stat);
+const coap_option_t *getOption(const coap_message_t *msg, uint16_t num, uint8_t *count);
 int getNextMessage(coap_message_t *out);
 int deleteFromOutgoing(size_t index);
 int deleteFromOutgoingByMid(uint16_t mid);
+int delayMessage(int i);
 
 extern coap_coms_buffer_t outgoingMessages;
+extern coap_concurrent_mid_buffer_t recentMids;

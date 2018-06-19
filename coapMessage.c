@@ -6,9 +6,11 @@
 
 #include "coapMessage.h"
 #include "errors.h"
+#include "idgen.h"
 
 coap_endpoint_t endpoints[];
 coap_coms_buffer_t outgoingMessages;
+coap_concurrent_mid_buffer_t recentMids;
 
 int initEmptyMessage(coap_message_t *msg) {
     msg->header = malloc(sizeof(coap_header_t));
@@ -123,12 +125,12 @@ int parse(coap_message_t *message, uint8_t *bitstring, size_t msg_size) {
             o_len = bitstring[++readpos] << 8; 
             o_len |= bitstring[++readpos]+269;
         }
-
         message->opts[optCount-1].number = delta+rollingDelta;
         message->opts[optCount-1].value.len = o_len;
         message->opts[optCount - 1].value.p = &(bitstring[++readpos]);
         
         readpos += o_len;
+        rollingDelta += delta;
     }
 
     message->numopts=optCount;
@@ -287,27 +289,40 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
 }
 
 int handleIncomingMessage(char* buf, size_t length){          //return index of response in outgoingmessages or -1 on error
-    printf("HANDLEINCOMING\n");
     int s;
     coap_message_t *msg = malloc(sizeof(coap_message_t));
-    s = parse(msg, (uint8_t *)buf, length);
+    if ((s = parse(msg, (uint8_t *)buf, length))==-1){
+        addReset(msg->header->message_id);
+    }
+    if(msg->header->type==CON){
+        handleIncomingConfirmableMessage(msg, length);
+    }
+    if(msg->header->type==ACK){
+        deleteFromOutgoingByMid(msg->header->message_id);
+    }
+    if(msg->header->type==RST){
+        deleteFromOutgoingByMid(msg->header->message_id);
+    }
+    return 0;
+}
+
+int handleIncomingConfirmableMessage(coap_message_t *msg, size_t length){
+    int s;
     coap_out_msg_storage_t coms;
     coap_message_t *resp = malloc(sizeof(coap_message_t));
     if ((s = getResponse(msg, resp))!=-1){
+        dumpMessage(resp);
         time_t now = time(NULL);
         coms.failedattempts=0;
-        coms.lasttransmission=0;
+        coms.nexttransmission=now;
         coms.msg=resp;
         coms.recvtime=now;
         return addToOutgoing(coms);
-     } else {
-         addReset(msg->header->message_id);
-     }
-     return SUCCESS;
+    }
+    return 0;
 }
 
 int addToOutgoing(coap_out_msg_storage_t coms){
-    printf("ADDTOOUTGOING\n");
     int i=0;
     if (outgoingMessages.capacity==outgoingMessages.length){
         size_t newsize = outgoingMessages.capacity*2;
@@ -333,7 +348,7 @@ int addReset(uint16_t mid){
     coap_out_msg_storage_t coms;
     time_t now = time(NULL);
     coms.failedattempts=0;
-    coms.lasttransmission=0;
+    coms.nexttransmission=now;
     coms.msg=rsp;
     coms.recvtime=now;
     return addToOutgoing(coms);
@@ -347,7 +362,7 @@ int add_acknowledge(uint16_t mid){
     coap_out_msg_storage_t coms;
     time_t now = time(NULL);
     coms.failedattempts=0;
-    coms.lasttransmission=0;
+    coms.nexttransmission=now;
     coms.msg=rsp;
     coms.recvtime=now;
     return addToOutgoing(coms);
@@ -377,13 +392,15 @@ int deleteFromOutgoingByMid(uint16_t mid){
 }
 
 int getNextMessage(coap_message_t *out){
-    printf("GETNEXTMESSAGE\n");
     int i;
+    time_t now = time(NULL);
     for(i=0;i<outgoingMessages.capacity;i++){
-        if(outgoingMessages.stor[i].msg!=NULL){
+        if((outgoingMessages.stor[i].msg!=NULL)&&(outgoingMessages.stor[i].nexttransmission<=now)){
             memcpy(out, outgoingMessages.stor[i].msg, sizeof(coap_message_t));
-            printf("FOUND MESSAGE\n");
-            dumpMessage(out);
+            if(out->header->type==CON || out->header->type==RST)
+                delayMessage(i);
+            else
+                deleteFromOutgoing(i);
             return i;
         }
     }
@@ -391,13 +408,12 @@ int getNextMessage(coap_message_t *out){
 }
 
 int getResponse(const coap_message_t *in, coap_message_t *out){
-    printf("GETRESPONSE\n");
     int i=0;
     const coap_endpoint_t *ep = endpoints;
     uint8_t count;
     const coap_option_t *opt;
     char foundPath=0;
-    while(NULL != endpoints->coap_endpoint_function){
+    while(NULL != ep->coap_endpoint_function){
         if (NULL != (opt = getOption(in, 11, &count))){
             if(count!=ep->path->length){
                 goto next;
@@ -413,24 +429,27 @@ int getResponse(const coap_message_t *in, coap_message_t *out){
                 if(ep->method==(in->header->code_type<<5 | in->header->code_status)){
                     return ep->coap_endpoint_function(in, out);
                 }
-
             }
-        }
-        if(foundPath){
-            //return 405
         }
 next:
         ep++;
     }
-    return makeResponse(out, NULL, 0, in->header->message_id, &in->token,4,4);
+   if(foundPath){
+        return makeResponse(out, NULL, 0, in->header->message_id, &in->token, COAP_CLIENTERROR,COAP_CLIENTERROR_METHODNOTALLOWED);            
+    }
+    return makeResponse(out, NULL, 0, in->header->message_id, &in->token, COAP_CLIENTERROR, COAP_CLIENTERROR_NOTFOUND);
 }
 
-const coap_option_t *getOption(const coap_message_t *msg, uint8_t num, uint8_t *count){
+const coap_option_t *getOption(const coap_message_t *msg, uint16_t num, uint8_t *count){
+
+    dumpMessage(msg);
     int i;
     for (i=0; i<msg->numopts; i++){
         if (msg->opts[i].number==num){
-            (*count)++;
-            while(msg->opts[i+(*count)].number==num){
+            while(1){
+                if (msg->opts[i+(*count)].number!=num){
+                    break;
+                }
                 (*count)++;
             }
         }
@@ -439,13 +458,13 @@ const coap_option_t *getOption(const coap_message_t *msg, uint8_t num, uint8_t *
     return NULL;
 }
 
-int makeResponse(coap_message_t *msg, const uint8_t *content, size_t content_length, uint16_t mid,const coap_buffer_t *tok, uint8_t c_stat, uint8_t c_type){
+int makeResponse(coap_message_t *msg, const uint8_t *content, size_t content_length, uint16_t mid,const coap_buffer_t *tok, uint8_t c_type, uint8_t c_stat){
     msg->header=malloc(sizeof(coap_header_t));
     msg->header->vers=0x01;
     msg->header->type=ACK;
     msg->header->token_len=0;
-    msg->header->code_status=c_stat;
     msg->header->code_type=c_type;
+    msg->header->code_status=c_stat;
     msg->header->message_id=mid;
     if(tok){
         msg->header->token_len=tok->len;
@@ -460,12 +479,59 @@ int makeResponse(coap_message_t *msg, const uint8_t *content, size_t content_len
 
     msg->payload.len=content_length;
     msg->payload.p=(uint8_t *)content;
+    addToRecentMids(msg->header->message_id, msg);
     return SUCCESS;
 }
 
 int delayMessage(int i){
-    time_t now = time(NULL);
-    outgoingMessages.stor[i].lasttransmission=now;
-    outgoingMessages.stor[i].failedattempts++;
+    if(outgoingMessages.stor[i].failedattempts==4){
+        deleteFromOutgoing(i);
+        return SUCCESS;
+    }
+    uint8_t pot = ++outgoingMessages.stor[i].failedattempts;
+    outgoingMessages.stor[i].nexttransmission+=(((double)getRandom()/(double)0xFFFFFFFF)*0.5+1)*(2<<pot)*CLOCKS_PER_SEC;
     return SUCCESS;
+}
+
+
+int addToRecentMids(uint16_t mid, coap_message_t *msg){
+    int i=0;
+    time_t now = time(NULL);
+    if (recentMids.capacity==recentMids.length){
+        size_t newsize = recentMids.capacity*2;
+        recentMids.stor=realloc(recentMids.stor, newsize*sizeof(coap_recent_mid_t));
+        if(recentMids.stor==NULL){
+            return -1;
+        }
+        recentMids.capacity*=2;
+    }
+    while(i<recentMids.length){ //skip occupied fields
+        if(recentMids.stor[i].lastused<now+247*CLOCKS_PER_SEC){
+            recentMids.stor[i].lastused=now;
+            recentMids.stor[i].mid=mid;
+            recentMids.stor[i].msg=msg;
+        } else {
+            if(recentMids.stor[i].mid==mid){
+                return -1;
+            } else {
+                i++;
+            }
+        }
+    }
+    recentMids.stor[i].mid=mid;  //store new message in array
+    recentMids.stor[i].lastused=now;
+    recentMids.stor[i].msg=msg;
+    recentMids.length++;
+    return i;                       //return index of message in array (might be bigger then length)
+}
+
+char isDuplicateByMid(uint16_t mid){
+    int i=0;
+    time_t now = time(NULL);
+    for (i=0; i<recentMids.length;i++){
+        if((recentMids.stor[i].mid==mid) && recentMids.stor[i].lastused>=(now+247*CLOCKS_PER_SEC)){
+            return 1;
+        }
+    }
+    return 0;
 }

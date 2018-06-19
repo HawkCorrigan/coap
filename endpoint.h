@@ -63,5 +63,6 @@ typedef struct {
 #define WK_CORE_LENGTH 1500 
 static char wk_core[WK_CORE_LENGTH];
 void generate_wk_core();
+static int wk_core_handler(const coap_message_t *inmsg, coap_message_t *out);
 
 extern coap_endpoint_t endpoints[150];

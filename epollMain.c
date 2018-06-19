@@ -11,6 +11,7 @@
 #include "time.h"
 #include "coapMessage.h"
 #include "endpoint.h"
+#include "idgen.h"
 
 #define MAXEVENTS 64
 #define ERROR -1
@@ -19,6 +20,7 @@
 
 coap_endpoint_t endpoints[150];
 coap_coms_buffer_t outgoingMessages;
+coap_concurrent_mid_buffer_t recentMids;
 
 static int make_socket_non_blocking (int sfd) {
     int flags, s;
@@ -77,13 +79,8 @@ static int create_and_bind (char *port) {
 }
 
 int main (int argc, char *argv[]) {
-    int i=0;
-    for (i=0;i<150;i++){
-        endpoints[i].coap_endpoint_function=NULL;
-        endpoints[i].ct=NULL;
-        endpoints[i].path=NULL;
-        endpoints[i].method=(coap_method_t)0;
-    }
+    initializeRNG();
+    initializeEndpoints();
     int sfd, s;
     int efd;
     struct epoll_event event;
@@ -91,7 +88,10 @@ int main (int argc, char *argv[]) {
     outgoingMessages.stor = malloc(sizeof(coap_out_msg_storage_t));
     outgoingMessages.length = 0;
     outgoingMessages.capacity=1;
-    outgoingMessages.stor[0].msg=NULL;    
+    outgoingMessages.stor[0].msg=NULL;
+    recentMids.length=0;
+    recentMids.stor=malloc(sizeof(coap_recent_mid_t));
+    recentMids.capacity=1;    
 
     sfd = create_and_bind (COAP_PORT);
     if (sfd == ERROR){
@@ -129,49 +129,40 @@ int main (int argc, char *argv[]) {
 	            continue;
 	        } else {
                 while (1){
-                    printf("STARTRECV\n");
                     ssize_t count;
                     char buf[512];
                     struct sockaddr_storage peer_addr;
                     socklen_t peer_addr_len = sizeof(peer_addr);
                     count = recvfrom (events[i].data.fd, buf, sizeof buf, 0, (struct sockaddr *) &peer_addr, &peer_addr_len);
-                    printf("DONERECV\ns");
                     if (count == -1) {
                         if (errno != EAGAIN) {
-                            perror ("read");
+                            printf("Received to failed with error %s\n Shutting down.", strerror(errno));
+                            return ERROR;
                         }
                     break;
                     } else if (count == 0){
                         break;
                     }
                     handleIncomingMessage(buf,(size_t)count);
-                    if (s == -1) {
-                        perror ("write");
-                        abort ();
-                    }
                 }
             }
         }
         int index;
         coap_message_t *outMsg = malloc(sizeof(coap_message_t));
         initEmptyMessage(outMsg);
-        
         if ((index=getNextMessage(outMsg))!=-1){
-            dumpMessage(outMsg);
             ssize_t count;
             size_t *msg_size = malloc (sizeof(size_t));
             uint8_t *buf=malloc(sizeof(uint8_t));
-            printf("STARTBUILD\n");
             dumpMessage(outMsg);
             build(buf, msg_size, outMsg);
-            printf("TRYING TO SEND %zu Bytes: %s\n", *msg_size, buf);
             struct sockaddr_storage peer_addr;
             socklen_t peer_addr_len = sizeof(peer_addr);
             count = sendto(events[0].data.fd, buf, *msg_size, 0, (struct sockaddr *) &peer_addr, peer_addr_len);
             deleteFromOutgoing(index);
             if (count == -1){
-                printf("%d\n", errno);
-                return -1;
+                printf("Send to failed with error %s\n Shutting down.", strerror(errno));
+                return ERROR;
             }
         }
     }
