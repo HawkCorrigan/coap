@@ -289,21 +289,33 @@ int build(uint8_t *buf, size_t *buflen, const coap_message_t *msg){
 }
 
 int handleIncomingMessage(char* buf, size_t length){          //return index of response in outgoingmessages or -1 on error
+
     int s;
     coap_message_t *msg = malloc(sizeof(coap_message_t));
     if ((s = parse(msg, (uint8_t *)buf, length))==-1){
         addReset(msg->header->message_id, &(msg->token));
     }
     if((msg->header->type==CON) || (msg->header->type==NON)){
-        coap_out_msg_storage_t coms;
-        coap_message_t *resp = malloc(sizeof(coap_message_t));
-        if ((s = getResponse(msg, resp))!=-1){
-        time_t now = time(NULL);
-        coms.failedattempts=0;
-        coms.nexttransmission=now;
-        coms.msg=resp;
-        coms.recvtime=now;
-        return addToOutgoing(coms);
+        if((s=getDuplicate(msg))!=-1){
+            coap_out_msg_storage_t coms;
+            time_t now = time(NULL);
+            coms.failedattempts=0;
+            coms.nexttransmission=now;
+            coms.msg=recentMids.stor[s].outmsg;
+            coms.recvtime=now;
+            return addToOutgoing(coms);
+        } else {
+            coap_out_msg_storage_t coms;
+            coap_message_t *resp = malloc(sizeof(coap_message_t));
+            if ((s = getResponse(msg, resp))!=-1){
+                time_t now = time(NULL);
+                coms.failedattempts=0;
+                coms.nexttransmission=now;
+                coms.msg=resp;
+                coms.recvtime=now;
+                addToRecent(msg, resp);
+                return addToOutgoing(coms);
+            }
         }
     }
     if(msg->header->type == ACK || msg->header->type == RST){
@@ -313,14 +325,13 @@ int handleIncomingMessage(char* buf, size_t length){          //return index of 
 }
 
 int handleIncomingConfirmableMessage(coap_message_t *msg, size_t length){
-    
     int s;
-    if((s=getDuplicateByMid(msg->header->message_id))!=-1){
+    if((s=getDuplicate(msg))!=-1){
         coap_out_msg_storage_t coms;
         time_t now=time(NULL);
         coms.failedattempts=0;
         coms.nexttransmission=now;
-        coms.msg=recentMids.stor[s].msg;
+        coms.msg=recentMids.stor[s].outmsg;
         coms.recvtime=now;
         return addToOutgoing(coms);
     }
@@ -452,10 +463,10 @@ int getResponse(const coap_message_t *in, coap_message_t *out){
                 if(0!=memcmp(ep->path->dest[i], opt[i].value.p, opt[i].value.len)){
                     goto next;
                 }
-                foundPath=1;
-                if(ep->method==(in->header->code_type<<5 | in->header->code_status)){
-                    return ep->coap_endpoint_function(in, out);
-                }
+            }
+            foundPath=1;
+            if(ep->method==(in->header->code_type<<5 | in->header->code_status)){
+                return ep->coap_endpoint_function(in, out);
             }
         }
 next:
@@ -504,7 +515,6 @@ int makeResponse(coap_message_t *msg, const uint8_t *content, size_t content_len
 
     msg->payload.len=content_length;
     msg->payload.p=(uint8_t *)content;
-    addToRecentMids(msg->header->message_id, msg);
     return SUCCESS;
 }
 
@@ -519,7 +529,7 @@ int delayMessage(int i){
 }
 
 
-int addToRecentMids(uint16_t mid, coap_message_t *msg){
+int addToRecent(coap_message_t *inmsg, coap_message_t *outmsg){
     int i=0;
     time_t now = time(NULL);
     if (recentMids.capacity==recentMids.length){
@@ -531,32 +541,54 @@ int addToRecentMids(uint16_t mid, coap_message_t *msg){
         recentMids.capacity*=2;
     }
     while(i<recentMids.length){ //skip occupied fields
-        if(recentMids.stor[i].lastused<now+247*CLOCKS_PER_SEC){
+        if(recentMids.stor[i].lastused+247*CLOCKS_PER_SEC<=now){
             recentMids.stor[i].lastused=now;
-            recentMids.stor[i].mid=mid;
-            recentMids.stor[i].msg=msg;
+            recentMids.stor[i].inmsg=inmsg;
         } else {
-            if(recentMids.stor[i].mid==mid){
+            if(areIdentical(recentMids.stor[i].inmsg,inmsg)){
                 return -1;
             } else {
                 i++;
             }
         }
     }
-    recentMids.stor[i].mid=mid;  //store new message in array
     recentMids.stor[i].lastused=now;
-    recentMids.stor[i].msg=msg;
+    recentMids.stor[i].inmsg=inmsg;
     recentMids.length++;
     return i;                       //return index of message in array (might be bigger then length)
 }
 
-int getDuplicateByMid(uint16_t mid){
+int getDuplicate(coap_message_t *msg){
     int i=0;
     time_t now = time(NULL);
     for (i=0; i<recentMids.capacity;i++){
-        if((recentMids.stor[i].mid==mid) && recentMids.stor[i].lastused>=(now+247*CLOCKS_PER_SEC)){
-            return i;
+        if(recentMids.stor[i].inmsg!=NULL){
+            if(areIdentical(recentMids.stor[i].inmsg, msg) && ((recentMids.stor[i].lastused+247*CLOCKS_PER_SEC)>=now)){
+                return i;
+            }
         }
     }
     return -1;
+}
+
+char areIdentical(coap_message_t *msg1, coap_message_t *msg2){
+    if((msg1->header->message_id)!=(msg2->header->message_id)){
+        return 0;
+    }
+    uint8_t size1;
+    uint8_t size2;
+    const coap_option_t *path1 = getOption(msg1, 11, &size1);
+    const coap_option_t *path2 = getOption(msg2, 11, &size2);
+    
+    if(size1!=size2){
+        return 0;
+    }
+    uint8_t i;
+    for(i=0;i<size1;i++){
+        if(!memcmp(path1[i].value.p, path2[i].value.p, path1->value.len)){
+            return 0;
+        }
+    }
+    return 1;
+        
 }

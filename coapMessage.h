@@ -45,9 +45,9 @@ typedef struct coap_coms_buffer_t {
 } coap_coms_buffer_t;
 
 typedef struct coap_recent_mid_t {
-    uint16_t mid;
     time_t lastused;
-    coap_message_t *msg;
+    coap_message_t *inmsg;
+    coap_message_t *outmsg;
 } coap_recent_mid_t;
 
 typedef struct coap_concurrent_mid_buffer_t {
@@ -88,14 +88,15 @@ int addReset(uint16_t mid, coap_buffer_t *tok);
 int add_acknowledge(uint16_t mid, coap_buffer_t *tok);
 int getResponse(const coap_message_t *in, coap_message_t *out);
 int addToOutgoing(coap_out_msg_storage_t coms);
-int addToRecentMids(uint16_t mid, coap_message_t *msg);
+int addToRecent(coap_message_t *inmsg, coap_message_t *outmsg);
 int makeResponse(coap_message_t *msg, const uint8_t *content, size_t content_length, uint16_t mid,const coap_buffer_t *tok, uint8_t c_type, uint8_t c_stat);
 const coap_option_t *getOption(const coap_message_t *msg, uint16_t num, uint8_t *count);
 int getNextMessage(coap_message_t *out);
 int deleteFromOutgoing(size_t index);
 int deleteFromOutgoingByMid(uint16_t mid);
 int delayMessage(int i);
-int getDuplicateByMid(uint16_t mid);
+int getDuplicate(coap_message_t *msg);
+char areIdentical(coap_message_t *msg1, coap_message_t *msg2);
 
 extern coap_coms_buffer_t outgoingMessages;
 extern coap_concurrent_mid_buffer_t recentMids;
