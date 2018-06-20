@@ -292,7 +292,7 @@ int handleIncomingMessage(char* buf, size_t length){          //return index of 
     int s;
     coap_message_t *msg = malloc(sizeof(coap_message_t));
     if ((s = parse(msg, (uint8_t *)buf, length))==-1){
-        addReset(msg->header->message_id);
+        addReset(msg->header->message_id, &(msg->token));
     }
     if((msg->header->type==CON) || (msg->header->type==NON)){
         coap_out_msg_storage_t coms;
@@ -323,6 +323,9 @@ int handleIncomingConfirmableMessage(coap_message_t *msg, size_t length){
         coms.msg=recentMids.stor[s].msg;
         coms.recvtime=now;
         return addToOutgoing(coms);
+    }
+    if((msg->header->code_status == 0) && (msg->header->code_type == 0)){
+        return addReset(msg->header->message_id, &(msg->token));
     }
     coap_out_msg_storage_t coms;
     coap_message_t *resp = malloc(sizeof(coap_message_t));
@@ -355,11 +358,15 @@ int addToOutgoing(coap_out_msg_storage_t coms){
     return i;                       //return index of message in array (might be bigger then length)
 }
 
-int addReset(uint16_t mid){
+int addReset(uint16_t mid, coap_buffer_t *tok){
     coap_message_t *rsp = malloc(sizeof(coap_message_t));
     initEmptyMessage(rsp);
     rsp->header->type=RST;
     rsp->header->message_id=mid;
+    if(tok){
+        rsp->header->token_len=tok->len;
+        rsp->token=*tok;
+    }
     coap_out_msg_storage_t coms;
     time_t now = time(NULL);
     coms.failedattempts=0;
@@ -369,11 +376,15 @@ int addReset(uint16_t mid){
     return addToOutgoing(coms);
 }
 
-int add_acknowledge(uint16_t mid){
+int add_acknowledge(uint16_t mid, coap_buffer_t *tok){
     coap_message_t *rsp = malloc(sizeof(coap_message_t));
     initEmptyMessage(rsp);
     rsp->header->type=ACK;
     rsp->header->message_id=mid;
+   if(tok){
+        rsp->header->token_len=tok->len;
+        rsp->token=*tok;
+    }
     coap_out_msg_storage_t coms;
     time_t now = time(NULL);
     coms.failedattempts=0;

@@ -34,7 +34,6 @@ void usage(const char *program)
 }
 
 void addOption(coap_message_t *msg, char *optnum, char *optvalue) {
-    printf("\nNEW OPTION: %s:%s",optnum,optvalue);
     msg->numopts++;
     msg->opts = realloc(msg->opts, msg->numopts * sizeof(coap_option_t));
     msg->opts[msg->numopts - 1].number = (uint8_t)atoi(optnum);
